@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CCAR-F Study Hub — Claude Certified Architect, Foundations</title>
+<meta name="description" content="Single-place study hub for the Anthropic Claude Certified Architect – Foundations exam: full documentation, hands-on exercises, and a 60-question timed mock exam with teaching explanations.">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark">C</span> CCAR-F Study Hub <small>· Claude Certified Architect – Foundations</small></a>
+    <nav class="nav">
+      <a href="index.html">Overview</a>
+      <a href="docs.html">Documentation</a>
+      <a href="exercises.html">Exercises</a>
+      <a href="exam.html">Mock Exam</a>
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </nav>
+  </div>
+</header>
+
+<main class="narrow content">
+
+  <div class="eyebrow">Anthropic Certification · Level 300</div>
+  <h1>Everything you need for the Claude Certified Architect&nbsp;— Foundations exam</h1>
+  <p class="lede">
+    Nine test topics, fully documented from primary Anthropic sources. Sixteen hands-on exercises you run
+    in the browser and on your own machine. Sixty scenario-based mock questions with a 120-minute timer and
+    an explanation for every option — right and wrong.
+  </p>
+
+  <div class="grid grid-4" style="margin:26px 0 34px">
+    <a class="stat" href="docs.html" style="color:inherit">
+      <div class="k">9</div><div class="l">Topics documented</div>
+    </a>
+    <a class="stat" href="exercises.html" style="color:inherit">
+      <div class="k">16</div><div class="l">Hands-on exercises</div>
+    </a>
+    <a class="stat" href="exam.html" style="color:inherit">
+      <div class="k">60</div><div class="l">Mock exam questions</div>
+    </a>
+    <div class="stat">
+      <div class="k">720</div><div class="l">Score needed to pass</div>
+    </div>
+  </div>
+
+  <div class="grid grid-3">
+    <div class="card">
+      <h3 class="mt0">1 · Read the documentation</h3>
+      <p class="small muted">Each of the 9 test topics gets a full treatment: the underlying mechanism, the exact
+      config/API surface, the decision rules the exam grades on, the anti-patterns it plants as distractors, and
+      a set of Q&amp;A drills.</p>
+      <a class="btn sm" href="docs.html">Open documentation →</a>
+    </div>
+    <div class="card">
+      <h3 class="mt0">2 · Do the exercises</h3>
+      <p class="small muted">Write a real <code>settings.json</code>, a real <code>PostToolUse</code> hook, a real
+      extraction schema — and get checked against the rules the exam applies. Plus terminal labs you run locally.</p>
+      <a class="btn sm" href="exercises.html">Open exercises →</a>
+    </div>
+    <div class="card">
+      <h3 class="mt0">3 · Sit the mock exam</h3>
+      <p class="small muted">60 questions / 120 minutes, weighted to the real blueprint. Includes
+      <em>select-2</em> items. Study mode reveals the rule behind the right answer and why each distractor fails.</p>
+      <a class="btn sm" href="exam.html">Start mock exam →</a>
+    </div>
+  </div>
+
+  <h2>The exam at a glance</h2>
+  <div class="table-wrap">
+  <table>
+    <tr><th style="width:34%">Attribute</th><th>Detail</th></tr>
+    <tr><td>Full name</td><td>Claude Certified Architect – Foundations (CCA-F / CCAR-F)</td></tr>
+    <tr><td>Level</td><td>300 — assumes you have shipped production work with Claude, not just used the chat UI</td></tr>
+    <tr><td>Format</td><td>Proctored, closed-book, scenario-based multiple choice</td></tr>
+    <tr><td>Length</td><td>60 questions / 120 minutes (~2 minutes per question)</td></tr>
+    <tr><td>Scoring</td><td>Scaled 100–1000; <strong>720 to pass</strong>; result shown immediately</td></tr>
+    <tr><td>Scope</td><td>Claude Code · Claude Agent SDK · Claude API · Model Context Protocol (MCP)</td></tr>
+    <tr><td>Structure</td><td>Questions arrive grouped under a handful of long business scenarios, not as isolated trivia</td></tr>
+  </table>
+  </div>
+
+  <div class="note rule">
+    <b>The single most useful thing to know about this exam</b>
+    Candidate write-ups converge on one rule: <strong>the correct answer fixes the root cause structurally; the
+    distractors add a probabilistic layer on top of a broken design.</strong> When two options both "work", pick the
+    one enforced by code, config, schema, or API parameter over the one enforced by asking the model nicely.
+  </div>
+
+  <h2>Domain weightings</h2>
+  <p>The mock exam in this hub is built to these weightings, so your per-domain score is a meaningful signal.</p>
+  <div class="table-wrap">
+  <table>
+    <tr><th>Domain</th><th style="width:90px">Weight</th><th style="width:100px">Mock Qs</th><th>What it actually tests</th></tr>
+    <tr>
+      <td><strong>Agentic Architecture &amp; Orchestration</strong></td><td>27%</td><td>16</td>
+      <td>The agentic loop and its stop reasons, session termination guarantees, coordinator/subagent decomposition, hub-and-spoke topology, context isolation between agents</td>
+    </tr>
+    <tr>
+      <td><strong>Claude Code Configuration &amp; Workflows</strong></td><td>20%</td><td>12</td>
+      <td>CLAUDE.md vs settings vs hooks, permission rules and precedence, PostToolUse enforcement, subagents, CI/CD with <code>-p</code></td>
+    </tr>
+    <tr>
+      <td><strong>Prompt Engineering &amp; Structured Output</strong></td><td>20%</td><td>12</td>
+      <td>Extraction schema design, nullable/optional/enum modelling, few-shot targeting, validation-retry loops, Batch API trade-offs, feedback loops</td>
+    </tr>
+    <tr>
+      <td><strong>Tool Design &amp; MCP Integration</strong></td><td>18%</td><td>11</td>
+      <td>Tool descriptions and disambiguation, <code>tool_choice</code>, multi-tool sequencing, structured tool errors, <code>.mcp.json</code>, tool scoping per role</td>
+    </tr>
+    <tr>
+      <td><strong>Context Management &amp; Reliability</strong></td><td>15%</td><td>9</td>
+      <td>Escalation decision criteria, long-conversation preservation, handoff payloads, error propagation, confidence calibration</td>
+    </tr>
+  </table>
+  </div>
+
+  <h2>Your 9 test topics, mapped</h2>
+  <p>These are the objectives from <code>Test Topics.txt</code>. Every one is covered end-to-end in the documentation,
+  drilled in the exercises, and sampled in the mock exam.</p>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th style="width:36px">#</th><th>Objective</th><th style="width:210px">Primary domain</th><th style="width:78px">Study</th></tr>
+    <tr><td>1</td><td>Design orchestration-layer safeguards ensuring every agent session ends with a completed resolution or human escalation, regardless of how the agentic loop terminates.</td><td>Agentic Architecture</td><td><a href="docs.html#t1">Read →</a></td></tr>
+    <tr><td>2</td><td>Distinguish instructions that must be enforced through settings permissions or hooks from those appropriately placed in CLAUDE.md, and restructure configurations accordingly.</td><td>Claude Code Config</td><td><a href="docs.html#t2">Read →</a></td></tr>
+    <tr><td>3</td><td>Implement PostToolUse hooks that automatically enforce code quality constraints — formatting, linting, test execution — after every file edit, independent of model instruction-following.</td><td>Claude Code Config</td><td><a href="docs.html#t3">Read →</a></td></tr>
+    <tr><td>4</td><td>Apply escalation decision criteria to determine when an agent should immediately honor a human escalation request versus attempt autonomous resolution.</td><td>Context &amp; Reliability</td><td><a href="docs.html#t4">Read →</a></td></tr>
+    <tr><td>5</td><td>Design extraction schemas with optional fields, nullable values, and appropriate enum definitions that let the model represent missing or ambiguous information without fabricating values.</td><td>Structured Output</td><td><a href="docs.html#t5">Read →</a></td></tr>
+    <tr><td>6</td><td>Apply extraction accuracy patterns — structured schemas, format normalization instructions, few-shot examples — to reduce hallucination across varied document formats.</td><td>Structured Output</td><td><a href="docs.html#t6">Read →</a></td></tr>
+    <tr><td>7</td><td>Design feedback loop mechanisms that capture structured metadata about model errors and use those patterns to improve prompts, schemas, or few-shot examples.</td><td>Reliability</td><td><a href="docs.html#t7">Read →</a></td></tr>
+    <tr><td>8</td><td>Improve tool selection reliability by expanding tool descriptions with use-case examples, input format specifications, and explicit disambiguation guidance.</td><td>Tool Design &amp; MCP</td><td><a href="docs.html#t8">Read →</a></td></tr>
+    <tr><td>9</td><td>Configure <code>tool_choice</code> to guarantee tool invocation when structured output is required, and sequence multi-tool workflows so prerequisite data is obtained first.</td><td>Tool Design &amp; MCP</td><td><a href="docs.html#t9">Read →</a></td></tr>
+  </table>
+  </div>
+
+  <h2>The seven anti-patterns the exam plants as distractors</h2>
+  <p>Nearly every wrong answer in the real exam is one of these dressed up in business language. Learn them as a
+  checklist and you can eliminate two options before you finish reading the stem.</p>
+
+  <div class="table-wrap">
+  <table>
+    <tr><th style="width:26%">Anti-pattern</th><th>The tempting wrong answer</th><th>What the exam wants</th></tr>
+    <tr><td><strong>Prompt-based enforcement</strong></td><td>"Add a line to the system prompt / CLAUDE.md telling it never to…"</td><td>A deterministic gate: permission rule, hook, backend validation, schema constraint</td></tr>
+    <tr><td><strong>Self-reported confidence</strong></td><td>"Escalate when the model's confidence score drops below 0.7"</td><td>Deterministic, observable triggers: explicit customer request, policy gap, no progress after N attempts</td></tr>
+    <tr><td><strong>Batch API in a blocking path</strong></td><td>"Use the Message Batches API to cut cost 50%"</td><td>Batch is asynchronous with a 24-hour window — never in a user-facing or pre-merge path</td></tr>
+    <tr><td><strong>Bigger context window</strong></td><td>"Load all 400 files into one giant prompt"</td><td>Focused per-unit passes; attention dilutes long before the window fills</td></tr>
+    <tr><td><strong>Silent subagent failure</strong></td><td>"Return an empty result so the coordinator keeps going"</td><td>Structured error payload the coordinator can act on: what failed, is it retryable, what partial data exists</td></tr>
+    <tr><td><strong>Unrestricted tool access</strong></td><td>"Give every agent the full tool catalogue for flexibility"</td><td>Role-scoped tool assignment — fewer tools, less selection ambiguity, smaller blast radius</td></tr>
+    <tr><td><strong>Flat agent topology</strong></td><td>"Let the agents talk to each other to coordinate"</td><td>Hub-and-spoke: one coordinator owns decomposition, merging, and final resolution</td></tr>
+  </table>
+  </div>
+
+  <h2>How to use this hub</h2>
+  <ol>
+    <li><strong>Day 1–3 — Read.</strong> Work through <a href="docs.html">Documentation</a> topic by topic. Do the Q&amp;A drill at the end of each topic before moving on; if you miss one, re-read the section above it rather than pushing forward.</li>
+    <li><strong>Day 4–6 — Build.</strong> Do every <a href="exercises.html">Exercise</a>. The browser-checked ones are graded against the exam's rules; the terminal labs make the config behaviour real. Configuration knowledge that you have only read is the knowledge that fails under time pressure.</li>
+    <li><strong>Day 7 — Sit it timed.</strong> Take the <a href="exam.html">Mock Exam</a> in <em>Exam mode</em>: 120 minutes, no feedback until you submit. Aim for 850+ before booking, because a proctored, closed-book environment costs you points a practice run does not.</li>
+    <li><strong>Day 8 — Review.</strong> Re-open the finished exam and read every explanation, including the ones you got right. The "why the others are ruled out" text is where the marginal points live.</li>
+    <li><strong>Then retake in Study mode</strong> with the question order shuffled, to check you learned the principle rather than the answer letter.</li>
+  </ol>
+
+  <h2>Primary sources</h2>
+  <p class="small">This hub is written from Anthropic's product documentation plus public candidate reports. Where a
+  detail is version-sensitive (flag names, hook event names, schema keyword support), verify against the live docs
+  before exam day.</p>
+  <ul class="small">
+    <li><a href="https://code.claude.com/docs/en/hooks" target="_blank" rel="noopener">Claude Code — Hooks reference</a></li>
+    <li><a href="https://code.claude.com/docs/en/settings" target="_blank" rel="noopener">Claude Code — Settings &amp; permissions</a></li>
+    <li><a href="https://code.claude.com/docs/en/memory" target="_blank" rel="noopener">Claude Code — CLAUDE.md &amp; memory</a></li>
+    <li><a href="https://code.claude.com/docs/en/sub-agents" target="_blank" rel="noopener">Claude Code — Subagents</a></li>
+    <li><a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/define-tools" target="_blank" rel="noopener">Claude API — Define tools &amp; <code>tool_choice</code></a></li>
+    <li><a href="https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls" target="_blank" rel="noopener">Claude API — Handle tool calls, <code>stop_reason</code>, <code>is_error</code></a></li>
+    <li><a href="https://platform.claude.com/docs/en/build-with-claude/structured-outputs" target="_blank" rel="noopener">Claude API — Structured outputs &amp; strict tool use</a></li>
+    <li><a href="https://anthropic-partners.skilljar.com/claude-certified-architect-foundations-certification" target="_blank" rel="noopener">Anthropic Academy — official certification page &amp; exam guide PDF</a></li>
+  </ul>
+
+  <div class="note warn" style="margin-top:26px">
+    <b>One honest caveat</b>
+    Anthropic does not publish its item bank. The 60 mock questions here are original, written to the published
+    blueprint, the documented product behaviour, and the traps reported by candidates who sat the exam — they are
+    not recalled or leaked exam items, and no source claiming to have verbatim exam questions was used. Treat a
+    strong score here as evidence you understand the material, not as a guarantee of the live item pool.
+  </div>
+
+</main>
+
+<footer class="footer">
+  <div class="narrow">
+    CCAR-F Study Hub · Documentation, exercises and mock exam for the Claude Certified Architect – Foundations certification.
+    Independent study material; not affiliated with or endorsed by Anthropic.
+  </div>
+</footer>
+
+</body>
+</html>

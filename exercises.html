@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exercises — CCAR-F Study Hub</title>
+<meta name="description" content="Sixteen hands-on exercises for the Claude Certified Architect – Foundations exam, graded in the browser.">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark">C</span> CCAR-F Study Hub</a>
+    <nav class="nav">
+      <a href="index.html">Overview</a>
+      <a href="docs.html">Documentation</a>
+      <a href="exercises.html">Exercises</a>
+      <a href="exam.html">Mock Exam</a>
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap layout">
+
+  <aside class="sidebar">
+    <h4>Exercises</h4>
+    <div id="exNav"></div>
+    <h4>Elsewhere</h4>
+    <a href="docs.html">← Documentation</a>
+    <a href="exam.html">Mock exam →</a>
+  </aside>
+
+  <main class="content">
+    <div class="eyebrow">Hands-on</div>
+    <h1>Sixteen exercises, graded against the exam's rules</h1>
+    <p class="lede">Fourteen are checked in your browser as you type — write the real configuration, the real schema,
+    the real hook, and see exactly which requirements you missed. Two are terminal labs you run on your own machine,
+    because the exit-code semantics of a hook only become permanent once you have watched one block an edit.</p>
+
+    <div class="note rule">
+      <b>Work them without the reference solution open</b>
+      Every exercise reveals a full worked answer, but the checklist is the teaching device: it names each
+      requirement the exam grades on. Get to a partial score first, read which checks failed, and fix them — that
+      loop is what transfers to exam day. Your editor contents are saved locally in this browser, so you can come
+      back to a half-finished answer.
+    </div>
+
+    <div class="grid grid-3" style="margin:22px 0 8px">
+      <div class="card"><h4 class="mt0">Browser-graded</h4><p class="small muted mb0">Write JSON or code into the editor and hit <em>Check</em>. Each check is a requirement the exam actually tests, phrased so a failure tells you what to change.</p></div>
+      <div class="card"><h4 class="mt0">Classification drills</h4><p class="small muted mb0">Fast recall for the decisions the exam repeats: which config surface, which hook event, which intervention, escalate or not.</p></div>
+      <div class="card"><h4 class="mt0">Terminal labs</h4><p class="small muted mb0">Run against a real Claude Code install. Deliberately break things — wrong exit code, wrong matcher, missing <code>-p</code> — and watch the failure mode.</p></div>
+    </div>
+
+    <div id="exRoot"></div>
+
+    <div class="card" style="margin-top:30px">
+      <div class="spread">
+        <div><strong>Done with the drills?</strong><div class="small muted">Sit the timed mock and find out what actually stuck.</div></div>
+        <a class="btn" href="exam.html">Start the mock exam →</a>
+      </div>
+    </div>
+  </main>
+</div>
+
+<footer class="footer"><div class="wrap">CCAR-F Study Hub · Independent study material; not affiliated with or endorsed by Anthropic.</div></footer>
+<script src="assets/js/exercises.js"></script>
+</body>
+</html>

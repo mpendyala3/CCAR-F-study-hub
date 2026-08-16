@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mock Exam — CCAR-F Study Hub</title>
+<meta name="description" content="60-question, 120-minute scenario-based mock exam for the Claude Certified Architect – Foundations certification, with a teaching explanation for every option.">
+<link rel="stylesheet" href="assets/css/style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎓</text></svg>">
+<script src="assets/js/app.js"></script>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="index.html"><span class="brand-mark">C</span> CCAR-F Study Hub</a>
+    <nav class="nav">
+      <a href="index.html">Overview</a>
+      <a href="docs.html">Documentation</a>
+      <a href="exercises.html">Exercises</a>
+      <a href="exam.html">Mock Exam</a>
+      <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Toggle theme" aria-label="Toggle theme">☾</button>
+    </nav>
+  </div>
+</header>
+
+<!-- sticky exam bar -->
+<div class="exam-bar hide" id="examBar">
+  <div class="narrow exam-bar-inner">
+    <span class="timer" id="timer">120:00</span>
+    <span class="tag accent" id="modeLabel">Study mode</span>
+    <div class="progress"><i id="progressBar"></i></div>
+    <span class="small muted" id="answeredCount">0 / 60 answered</span>
+    <button class="btn sm ghost" id="submitTop">Submit</button>
+    <button class="btn sm ghost" id="resetBtn">Reset</button>
+  </div>
+</div>
+
+<main class="narrow content">
+
+  <!-- ============ INTRO ============ -->
+  <section id="intro">
+    <div class="eyebrow">Mock exam</div>
+    <h1>60 questions · 120 minutes · pass at 720</h1>
+    <p class="lede">Scenario-based items weighted to the published blueprint, set inside six realistic businesses:
+    a retail bank's support agent, a marketplace's multi-agent order operations, an SRE incident agent, an IT
+    service desk, an insurance extraction pipeline, and a 400-engineer Claude Code rollout. Every question explains
+    the rule behind the right answer and why each distractor fails.</p>
+
+    <div class="grid grid-2" style="margin:24px 0">
+      <div class="card">
+        <h3 class="mt0">Study mode <span class="tag ok">recommended first</span></h3>
+        <p class="small muted">Check each answer as you go and read the explanation immediately, while the question
+        is still in your head. No time pressure. This is the mode that teaches.</p>
+      </div>
+      <div class="card">
+        <h3 class="mt0">Exam mode <span class="tag warn">simulation</span></h3>
+        <p class="small muted">120-minute countdown, no feedback until you submit — the same conditions as the real
+        thing. Use it once you have worked through study mode, to find out what survives time pressure.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3 class="mt0">Before you start</h3>
+      <ul class="small">
+        <li><strong>Select-2 items.</strong> <span id="multiCount">8</span> questions ask for exactly two answers.
+        They are marked. Both must be right to score — and the two are usually complementary layers, not two
+        phrasings of the same idea. If your picks are near duplicates, one is wrong.</li>
+        <li><strong>Scenarios repeat.</strong> Several questions share a business context. Read the scenario
+        carefully the first time; after that you can skim it.</li>
+        <li><strong>Scoring.</strong> Scaled 100–1000 like the real exam. 720 passes, which is about 42 of 60. Aim
+        for 850+ here before you book.</li>
+        <li><strong>Your progress is saved</strong> in this browser, so you can close the tab mid-attempt and come
+        back. In exam mode the clock keeps running.</li>
+        <li><strong>Keyboard:</strong> <kbd>1</kbd>–<kbd>4</kbd> to select, <kbd>←</kbd><kbd>→</kbd> to move,
+        <kbd>F</kbd> to flag, <kbd>Enter</kbd> to check in study mode.</li>
+      </ul>
+
+      <h4>Item distribution</h4>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Domain</th><th style="width:90px">Blueprint</th><th style="width:90px">Items</th></tr></thead>
+          <tbody id="blueprintBody"></tbody>
+        </table>
+      </div>
+
+      <label class="small" style="display:flex;gap:8px;align-items:center;margin:16px 0 4px;cursor:pointer">
+        <input type="checkbox" id="shuffleOpt" style="accent-color:var(--accent)">
+        Shuffle question order (use this on retakes, so you learn the principle rather than the position)
+      </label>
+
+      <div class="exam-actions">
+        <button class="btn" id="startStudy">Start in study mode</button>
+        <button class="btn ghost" id="startExam">Start timed exam (120 min)</button>
+      </div>
+    </div>
+
+    <div class="note warn" style="margin-top:24px">
+      <b>What these questions are and are not</b>
+      They are original items written to the published exam blueprint, to documented Claude Code / Claude API / MCP
+      behaviour, and to the traps reported by candidates who have sat the exam. They are not recalled or leaked
+      exam content, and no source claiming to hold verbatim exam items was used. A strong score here is evidence
+      you understand the material — treat it as that, not as a preview of the live item pool.
+    </div>
+  </section>
+
+  <!-- ============ EXAM ============ -->
+  <section id="examView" class="hide">
+    <div class="q-nav" id="qnav"></div>
+    <div id="qbody"></div>
+  </section>
+
+  <!-- ============ RESULTS ============ -->
+  <section id="resultView" class="hide"></section>
+
+</main>
+
+<footer class="footer"><div class="narrow">CCAR-F Study Hub · Independent study material; not affiliated with or endorsed by Anthropic.</div></footer>
+
+<script src="assets/js/exam-data.js"></script>
+<script src="assets/js/exam.js"></script>
+</body>
+</html>

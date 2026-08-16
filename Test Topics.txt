@@ -1,0 +1,17 @@
+1. Design orchestration-layer safeguards ensuring every agent session ends with a completed resolution or human escalation, regardless of how the agentic loop terminates.
+
+2. Distinguish instructions that must be enforced through settings permissions or hooks from those appropriately placed in CLAUDE.md, and restructure configurations accordingly.
+
+3. Implement PostToolUse hooks that automatically enforce code quality constraints—such as formatting, linting, or test execution—after every file edit, independent of model instruction-following.
+
+4. Apply escalation decision criteria to determine when an agent should immediately honor a human escalation request versus attempt autonomous resolution using available tools.
+
+5. Design extraction schemas with optional fields, nullable values, and appropriate enum definitions that allow the model to accurately represent missing or ambiguous information without fabricating values.
+
+6. Apply extraction accuracy patterns—structured schemas with optional fields, format normalization instructions, and few-shot examples—to reduce hallucination and improve consistency across varied document formats.
+
+7. Design feedback loop mechanisms that capture structured metadata about model errors and use those patterns to improve prompts, schemas, or few-shot examples in future iterations.
+
+8. Improve tool selection reliability by expanding tool descriptions with use-case examples, input format specifications, and explicit disambiguation guidance for semantically similar tools.
+
+9. Configure the tool_choice parameter to guarantee tool invocation when structured output is required, and sequence multi-tool workflows so prerequisite data is obtained before dependent tools are called.
