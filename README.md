@@ -1,5 +1,14 @@
 # CCAR-F Study Hub
 
+### 🔗 Live site: **https://mpendyala3.github.io/CCAR-F-study-hub/**
+
+Direct links: [Overview](https://mpendyala3.github.io/CCAR-F-study-hub/) ·
+[Docs](https://mpendyala3.github.io/CCAR-F-study-hub/docs.html) ·
+[Exercises](https://mpendyala3.github.io/CCAR-F-study-hub/exercises.html) ·
+[Mock exam](https://mpendyala3.github.io/CCAR-F-study-hub/exam.html)
+
+---
+
 A single-place study site for the **Anthropic Claude Certified Architect – Foundations** exam
 (CCA-F / CCAR-F): full documentation for all nine test topics, sixteen hands-on exercises graded in
 the browser, and a 60-question / 120-minute mock exam that explains the rule behind every right
@@ -52,6 +61,10 @@ letter pairs across the select-2 items), so guessing a favourite letter gains yo
 ---
 
 ## Deploy to GitHub Pages
+
+This repository is already published at
+**https://mpendyala3.github.io/CCAR-F-study-hub/** (Pages source: branch `main`, folder `/ (root)`).
+The instructions below are for deploying your own copy.
 
 From this directory:
 
