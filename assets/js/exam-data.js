@@ -6,6 +6,11 @@
 
    NOTE: this file is data. Option letters were balanced so no single
    letter dominates the answer key; do not re-sort options by hand.
+
+   Option LENGTH is balanced too: within every question the four options
+   are written to a similar length, and the correct option is deliberately
+   never the longest and never the shortest. Length must not leak the key —
+   if you edit an option, re-check the whole set before committing.
    ============================================================= */
 
 var DOMAINS = {
@@ -63,10 +68,10 @@ var QUESTIONS = [
   n: 1, domain: "AAO", topic: "Topic 1", sc: "S1", type: "multi",
   stem: "Post-launch analysis shows 2.8% of Meridian sessions end with no recorded outcome: no resolution, no escalation, no ticket. Logs show these sessions simply stop. Which TWO changes give the strongest guarantee that every session reaches a terminal state?",
   opts: {
-    A: "Add a <code>default</code> branch to the orchestrator's <code>stop_reason</code> handling that escalates on any unrecognised value, and escalate explicitly when the turn loop falls through its iteration budget.",
-    B: "Raise <code>MAX_TURNS</code> from 10 to 40 so sessions have enough iterations to finish.",
-    C: "Add a line to the system prompt instructing the agent to always either resolve the issue or call <code>escalate_to_human</code> before ending its turn.",
-    D: "Persist session state durably and run an out-of-band sweeper that escalates any session left in a non-terminal status past its SLA."
+    A: "Add a <code>default</code> branch to <code>stop_reason</code> handling that escalates on unrecognised values, and escalate when the turn loop falls through.",
+    B: "Raise <code>MAX_TURNS</code> from 10 to 40 so that long sessions have enough iterations to finish before the loop gives up on them.",
+    C: "Add a line to the system prompt telling the agent it must always resolve the issue or call <code>escalate_to_human</code> before ending its turn.",
+    D: "Persist session state durably and run an out-of-band sweeper that escalates any session left non-terminal past its SLA."
   },
   correct: ["A","D"],
   rule: "The terminal-state guarantee is an orchestration-layer property. It requires (1) exhaustive, in-process handling of every way the loop can exit — including unknown stop reasons and loop fall-through — and (2) an out-of-band mechanism for the exits that no in-process code can observe, such as a pod being killed mid-session. Together they close both the logical and the infrastructural gaps.",
@@ -81,10 +86,10 @@ var QUESTIONS = [
   n: 2, domain: "AAO", topic: "Topic 1", sc: "S1",
   stem: "A customer disputes a $32 charge. The transcript ends with the agent saying \"I have processed your refund of $32, you will see it in 3-5 days.\" The API returned <code>stop_reason: end_turn</code> and the orchestrator closed the session as RESOLVED. No refund exists in the payments system. What is the architectural defect?",
   opts: {
-    A: "The session should have used <code>tool_choice: {\"type\":\"any\"}</code> to force a tool call on every turn.",
-    B: "The refund tool silently failed and returned an empty result instead of an error.",
-    C: "The agent needed a lower temperature setting to avoid fabricating outcomes.",
-    D: "The orchestrator treats <code>end_turn</code> as proof of resolution rather than verifying the terminal action against the system of record."
+    A: "The session should have used <code>tool_choice: {\"type\":\"any\"}</code> to force a tool call on every turn of the loop.",
+    B: "The refund tool silently failed and returned an empty result rather than an error the orchestrator could have acted on.",
+    C: "The agent needed a lower temperature setting so that it would not fabricate outcomes that it had not performed.",
+    D: "The orchestrator treats <code>end_turn</code> as proof of resolution rather than verifying against the system of record."
   },
   correct: ["D"],
   rule: "<code>end_turn</code> means the model finished generating — nothing more. It fires identically for a real resolution and for a fabricated one. Resolution is a property of the world, not of the transcript, so a correct orchestrator gates success on a verification step against the system of record before writing RESOLVED.",
@@ -99,10 +104,10 @@ var QUESTIONS = [
   n: 3, domain: "AAO", topic: "Topic 1", sc: "S3",
   stem: "During a SEV-1, the incident agent produced a status update that ended mid-sentence. The pipeline published it to the customer status page. The API response carried <code>stop_reason: max_tokens</code>. What should the orchestrator have done?",
   opts: {
-    A: "Published the update anyway, since partial information during an incident is better than none.",
-    B: "Reduced the system prompt size so more of the budget was available for output.",
-    C: "Treated the response as incomplete — continued generation or escalated — and never allowed truncated output into a terminal action.",
-    D: "Retried the identical request, since <code>max_tokens</code> is a transient condition."
+    A: "Published the update anyway, on the basis that partial information during a live incident beats nothing at all.",
+    B: "Reduced the size of the system prompt so that more of the token budget was left available for the model's output.",
+    C: "Treated the response as incomplete — continued generation or escalated — and kept truncated output out of terminal actions.",
+    D: "Retried the identical request unchanged, on the basis that <code>max_tokens</code> truncation is a transient condition that soon clears."
   },
   correct: ["C"],
   rule: "<code>max_tokens</code> is a truncation signal, not a completion signal. Any pipeline that parses or publishes output received with <code>max_tokens</code> is treating an incomplete artefact as final. Correct handling is to continue the generation or route to a human — the choice depends on the SLA, but publishing is never it.",
@@ -118,9 +123,9 @@ var QUESTIONS = [
   stem: "A customer asks Northwind's coordinator to \"sort out my damaged order — I want a replacement, and tell the seller.\" The coordinator dispatches the returns agent and the logistics agent. Both complete successfully and report clean results, but the seller is never notified and the customer complains. Where is the defect?",
   opts: {
     A: "In the coordinator's task decomposition, which failed to scope a subtask covering the seller notification.",
-    B: "In the topology — the subagents should be able to message each other to fill gaps like this.",
+    B: "In the topology — the subagents should be able to message each other directly to fill gaps such as this one.",
     C: "In the returns subagent, which should have recognised the seller-notification requirement and handled it.",
-    D: "In the subagent tool descriptions, which did not mention seller notification."
+    D: "In the subagent tool descriptions, none of which mention seller notification as part of handling a return."
   },
   correct: ["A"],
   rule: "In a hub-and-spoke system the coordinator owns decomposition, dispatch and merge. When every subagent succeeds at its assigned task but the merged outcome has a gap, the gap was in the assignment. Coverage failures are decomposition failures, and they are not fixable by improving the workers.",
@@ -135,10 +140,10 @@ var QUESTIONS = [
   n: 5, domain: "AAO", topic: "Topic 1", sc: "S2",
   stem: "Northwind's logistics subagent frequently asks for information the customer already provided earlier in the conversation, such as the delivery address correction. Engineers propose fixes. Which explanation is correct?",
   opts: {
-    A: "The logistics subagent needs a larger context window.",
-    B: "The coordinator should re-ask the customer for the address before dispatching.",
-    C: "Subagents inherit the coordinator's conversation history, so the history must have been compacted too aggressively.",
-    D: "Subagents start with a clean context and receive only their delegation prompt, so anything they need must be passed explicitly by the coordinator."
+    A: "The logistics subagent needs a larger context window than the coordinator currently allocates to it at dispatch.",
+    B: "The coordinator should re-ask the customer for their delivery address before dispatching work to the subagent.",
+    C: "Subagents inherit the coordinator's full conversation history, so that history must have been compacted too aggressively.",
+    D: "Subagents start with a clean context and see only the delegation prompt, so the coordinator must pass what they need."
   },
   correct: ["D"],
   rule: "Non-fork subagents begin with a fresh context: the system prompt from their definition, the delegation message, and their own configuration. They do not receive the main conversation history. Explicit information passing is therefore the coordinator's responsibility, and a structured handoff payload is the mechanism.",
@@ -153,10 +158,10 @@ var QUESTIONS = [
   n: 6, domain: "AAO", topic: "Topic 1", sc: "S3",
   stem: "Helix's log-analysis subagent times out roughly 4% of the time. Its current implementation returns <code>{\"logs\": []}</code> on timeout so the coordinator \"keeps moving\". Incident commanders report the agent sometimes states there were no relevant log entries when in fact the search never ran. What should the subagent return instead?",
   opts: {
-    A: "The same empty result, with a note appended to the coordinator's system prompt telling it that empty results may mean failure.",
-    B: "A structured error containing the failure category, whether it is retryable, the query attempted, and any partial results retrieved before the timeout.",
-    C: "Nothing — it should raise an exception that aborts the whole incident session.",
-    D: "A best-effort summary generated from whatever context the subagent already has."
+    A: "The same empty result, with a note in the coordinator's system prompt warning that empty results may mean failure.",
+    B: "A structured error naming the failure category, whether it is retryable, the query attempted, and partial results.",
+    C: "Nothing — it should raise an exception that aborts the entire incident session and surfaces the fault to the caller upstream.",
+    D: "A best-effort summary of the incident, generated from whatever context the subagent already happens to have in hand."
   },
   correct: ["B"],
   rule: "Silent subagent failure is one of the exam's named anti-patterns. An empty result is indistinguishable from a genuine \"no matches\", so the coordinator draws a confident wrong conclusion. Failures must be reported as structured, actionable error context so the coordinator can retry, route around, or escalate.",
@@ -172,9 +177,9 @@ var QUESTIONS = [
   stem: "Meridian's orchestrator loops up to <code>MAX_TURNS = 12</code>. When the budget is exhausted, control falls out of the loop and the function returns <code>undefined</code>. What is the minimal correct change?",
   opts: {
     A: "Escalate explicitly with a reason code such as <code>TURN_BUDGET_EXHAUSTED</code>, attaching the partial progress.",
-    B: "Recursively call the session runner again with a fresh budget.",
-    C: "Log a warning and let the caller decide what to do with <code>undefined</code>.",
-    D: "Return the last assistant message so the customer receives something."
+    B: "Recursively call the session runner again with a fresh turn budget and the existing conversation history.",
+    C: "Log a warning and let the caller decide what to do with the <code>undefined</code> value that it receives back.",
+    D: "Return the last assistant message that was produced, so that the customer at least receives something."
   },
   correct: ["A"],
   rule: "Every exit path from the loop must map to exactly one terminal state. Budget exhaustion is an exit path, so it needs an explicit escalation with a machine-readable reason code and the work done so far, so the human does not restart from zero.",
@@ -189,10 +194,10 @@ var QUESTIONS = [
   n: 8, domain: "AAO", topic: "Topic 1", sc: "S4",
   stem: "Vantage deploys during business hours. Engineers notice that sessions in flight at deploy time disappear: no resolution, no escalation, no ticket update. The orchestrator already wraps its loop in <code>try/catch/finally</code> and asserts a terminal state in the <code>finally</code> block. Why is this still happening, and what fixes it?",
   opts: {
-    A: "The deploy should be moved to a maintenance window.",
-    B: "Sessions should be held entirely in memory so they are naturally discarded on restart.",
-    C: "The <code>finally</code> block is not awaited; making it synchronous will fix it.",
-    D: "Container termination does not run in-process cleanup reliably; only durable session state plus an external sweeper that escalates stale non-terminal sessions closes this path."
+    A: "The deploy should be moved into a maintenance window scheduled for a time of day when no customer sessions are active.",
+    B: "Sessions should be held entirely in memory so that they are naturally discarded whenever the process restarts.",
+    C: "The <code>finally</code> block is never awaited, so making that cleanup path fully synchronous will close the gap here.",
+    D: "Container termination will not run in-process cleanup; only durable state plus an external sweeper closes the path."
   },
   correct: ["D"],
   rule: "In-process safeguards cover in-process failures. A killed container, an evicted node or an OOM kill runs no <code>finally</code> block at all. The only safeguard that survives is state persisted outside the process plus a reaper that periodically sweeps for sessions stuck in a non-terminal status past their SLA.",
@@ -207,10 +212,10 @@ var QUESTIONS = [
   n: 9, domain: "AAO", topic: "Topic 1", sc: "S2",
   stem: "To reduce coordinator load, an engineer proposes letting Northwind's subagents call each other directly: the returns agent could ask the logistics agent about carrier pickup without going through the coordinator. What is the strongest objection?",
   opts: {
-    A: "Subagents cannot technically invoke other subagents.",
-    B: "It would increase token cost because each call re-sends the system prompt.",
-    C: "Direct calls would exceed the API rate limit at 12,000 concurrent sessions.",
-    D: "It abandons hub-and-spoke: no single component owns the merged outcome, failures become untraceable, and coordination paths grow combinatorially."
+    A: "Subagents cannot technically invoke one another, so the runtime would reject the call before dispatching it.",
+    B: "It would increase token cost, because each direct call re-sends the full system prompt and every tool definition.",
+    C: "Direct calls between subagents would exceed the API rate limit at 12,000 concurrent customer sessions.",
+    D: "It abandons hub-and-spoke: nothing owns the merged outcome, failures go untraceable, and paths multiply."
   },
   correct: ["D"],
   rule: "Hub-and-spoke with a central coordinator is the tested topology. One component owns decomposition, merge, and the terminal outcome. Flat peer-to-peer topologies are an named anti-pattern: with N agents you get N-squared potential interactions, no single place holds the truth about session state, and partial failures propagate invisibly.",
@@ -225,10 +230,10 @@ var QUESTIONS = [
   n: 10, domain: "AAO", topic: "Topic 1", sc: "S4",
   stem: "A Vantage session returns <code>stop_reason: refusal</code> when a user asks the agent to disable audit logging on their workstation. The orchestrator currently retries the request three times, then returns the third refusal to the user. What is the correct handling?",
   opts: {
-    A: "Treat <code>refusal</code> as terminal and escalate to a human immediately, recording the reason code.",
-    B: "Return the refusal text to the user and close the session as RESOLVED.",
-    C: "Retry with a rephrased prompt that avoids triggering the refusal.",
-    D: "Fall back to a smaller model that is less likely to refuse."
+    A: "Treat <code>refusal</code> as terminal and escalate to a human at once, recording the reason code on the session.",
+    B: "Return the refusal text to the customer and then close the session out as RESOLVED in the ticketing system.",
+    C: "Retry the turn with a rephrased prompt that steers around whatever it was that triggered the refusal.",
+    D: "Fall back to a smaller, less restricted model that is unlikely to refuse the same customer request."
   },
   correct: ["A"],
   rule: "<code>refusal</code> is a terminal stop reason. Retrying it wastes budget and, if the retry succeeds through rephrasing, you have engineered your way around a safety boundary. The correct path is escalation with a reason code, which also gives you a measurable signal about which requests are hitting refusals.",
@@ -243,10 +248,10 @@ var QUESTIONS = [
   n: 11, domain: "AAO", topic: "Topic 1", sc: "S1",
   stem: "Meridian's orchestrator determines whether a session is complete by checking whether the assistant's final message matches <code>/resolved|completed|all set/i</code>. Sessions are being closed incorrectly in both directions. What is the correct completion signal?",
   opts: {
-    A: "A fixed turn count after which sessions are assumed complete.",
+    A: "A fixed turn count after which the session can be assumed to have completed its work.",
     B: "A more comprehensive regular expression covering additional completion phrasings.",
-    C: "Asking the model, in a follow-up turn, whether it considers the session complete.",
-    D: "The API's <code>stop_reason</code> field, combined with verification that a terminal action occurred."
+    C: "Asking the model, in a follow-up turn, whether or not it considers the session complete.",
+    D: "The API's <code>stop_reason</code>, combined with verification that a terminal action occurred."
   },
   correct: ["D"],
   rule: "The loop is driven by <code>stop_reason</code>, never by the model's prose. Assistant text is free-form and changes with prompts, models and phrasing; <code>stop_reason</code> is a contractual field. Completion is <code>end_turn</code> plus verification that the world changed as claimed.",
@@ -261,10 +266,10 @@ var QUESTIONS = [
   n: 12, domain: "AAO", topic: "Topic 1", sc: "S2",
   stem: "Northwind wants to cut cost. An architect proposes running the coordinator on the cheapest available model and the four subagents on the strongest, reasoning that \"the subagents do the real work.\" What is the flaw?",
   opts: {
-    A: "The coordinator performs the hardest reasoning — intent parsing, decomposition, merge and final resolution — so degrading it degrades every downstream result regardless of subagent quality.",
-    B: "There is no flaw; delegating work to stronger models is the standard pattern.",
-    C: "Subagents should always run on the same model as the coordinator for consistency.",
-    D: "Mixing models across agents is not supported."
+    A: "The coordinator does the hardest reasoning — decomposition and merge — so weakening it degrades every result.",
+    B: "There is no flaw here; delegating the heavy lifting to stronger subagent models is a standard, proven pattern.",
+    C: "Subagents should always run on exactly the same model as the coordinator, so their behaviour stays consistent.",
+    D: "Mixing different models across agents within a single workflow is not supported by the orchestration layer."
   },
   correct: ["A"],
   rule: "Decomposition quality bounds the whole system. Subagents execute well-specified, narrow tasks — often a good fit for a cheaper model — while the coordinator handles ambiguity, coverage and synthesis. The usual correct routing is the inverse of the proposal: strong coordinator, cheaper workers.",
@@ -279,10 +284,10 @@ var QUESTIONS = [
   n: 13, domain: "AAO", topic: "Topic 1", sc: "S3",
   stem: "Helix's SEV-1 SLA is a first meaningful update within 15 minutes. Some agent sessions run 40 minutes exploring diagnostics before producing anything. Which control best protects the SLA without discarding the agent's work?",
   opts: {
-    A: "Instruct the agent in its prompt to work quickly during SEV-1 incidents.",
-    B: "Run the diagnostics in parallel so they complete faster.",
-    C: "Reduce <code>MAX_TURNS</code> so sessions cannot run that long.",
-    D: "A wall-clock deadline checked inside the loop that, when passed, escalates with the diagnostic findings gathered so far attached."
+    A: "Instruct the agent in its system prompt to work as quickly as possible during a live SEV-1 incident.",
+    B: "Run all of the diagnostic queries in parallel so that the whole set completes far faster than it does today.",
+    C: "Reduce <code>MAX_TURNS</code> so that an incident session simply cannot run for anything like that long.",
+    D: "A wall-clock deadline checked inside the loop that escalates with whatever findings have been gathered."
   },
   correct: ["D"],
   rule: "A turn budget bounds iterations, not time — a single turn with a slow tool can blow an SLA on its own. SLAs are wall-clock properties and need a wall-clock deadline enforced in the orchestration layer, with escalation carrying partial progress so the work is not wasted.",
@@ -297,10 +302,10 @@ var QUESTIONS = [
   n: 14, domain: "AAO", topic: "Topic 1", sc: "S4", type: "multi",
   stem: "Vantage must be able to answer, for any past session: what happened, why it ended, and what a human did next. Which TWO design elements are essential?",
   opts: {
-    A: "Have the agent write a natural-language summary of each session into the ticket at the end.",
-    B: "Persist a session record with a status field, a machine-readable termination reason code, and the tool-call sequence with outcomes.",
-    C: "Store the complete raw transcript of every session including all model reasoning, and search it when questions arise.",
-    D: "Capture, on escalated sessions, what the human did differently from what the agent proposed."
+    A: "Have the agent write a natural-language summary of each session into the ticket when the session finishes.",
+    B: "Persist a session record with a status, a machine-readable termination reason, and the tool calls with outcomes.",
+    C: "Store the complete raw transcript of every session, including all model reasoning, and search it when questions arise.",
+    D: "Capture, on every escalated session, what the human actually did differently from what the agent had proposed."
   },
   correct: ["B","D"],
   rule: "Auditability and improvement both require <em>structured</em> session metadata: status, a typed termination reason and the action trail. The highest-value single field in an agentic feedback loop is the delta between what the agent proposed and what the human actually did — a real, expert-labelled counterfactual on exactly the cases the agent failed.",
@@ -315,10 +320,10 @@ var QUESTIONS = [
   n: 15, domain: "AAO", topic: "Topic 1", sc: "S2",
   stem: "Northwind's coordinator dispatches four subagents in parallel for a complex request. Three succeed; the seller-policy agent returns a structured error indicating the policy service is unavailable and the failure is retryable. What should the coordinator do?",
   opts: {
-    A: "Substitute the seller-policy agent's output with the coordinator's best guess about the policy.",
+    A: "Substitute for the seller-policy agent's output with the coordinator's own best guess at the applicable policy.",
     B: "Compose the reply from the three successful results and say nothing about the missing policy check.",
-    C: "Discard all four results and restart the entire request from scratch.",
-    D: "Wait and retry the seller-policy agent within a bounded budget, and if it still fails, respond with the three completed results while explicitly stating the policy check could not be performed."
+    C: "Discard all four of the results and restart the entire customer request from scratch with fresh subagent calls.",
+    D: "Retry the seller-policy agent within a bounded budget, then answer with the three results, stating the gap."
   },
   correct: ["D"],
   rule: "Structured errors exist so the coordinator can act on them. A retryable failure justifies a bounded retry; if it persists, the correct behaviour is graceful degradation with the gap disclosed. Partial failure handling means continuing with a known, stated gap — never with a hidden one.",
@@ -333,10 +338,10 @@ var QUESTIONS = [
   n: 16, domain: "AAO", topic: "Topic 1", sc: "S1",
   stem: "Meridian's agent sometimes asks a clarifying question (\"which of the two $89 charges do you mean?\") and the session then sits idle because the customer never replies. These sessions are currently counted as IN_PROGRESS indefinitely. What is the correct model?",
   opts: {
-    A: "Prevent the agent from asking clarifying questions.",
-    B: "Count them as ESCALATED, since a human will eventually need to look at them.",
-    C: "Introduce an explicit suspended state (AWAITING_CUSTOMER) with its own timer that ages into RESOLVED via an auto-close policy or into ESCALATED.",
-    D: "Count them as RESOLVED, since the agent did its part."
+    A: "Prevent the agent from asking the customer clarifying questions that it cannot itself resolve.",
+    B: "Count them as ESCALATED, on the grounds that a human being will eventually have to look at them anyway.",
+    C: "Introduce a suspended state (AWAITING_CUSTOMER) with a timer that ages into RESOLVED or ESCALATED.",
+    D: "Count them as RESOLVED, on the grounds that the agent already did its part of the exchange."
   },
   correct: ["C"],
   rule: "The invariant is that no session sits in a non-terminal state indefinitely. Suspended states are legitimate and useful, but each one needs its own timer and its own transition into a terminal state, or it becomes the silent-drop path in disguise.",
@@ -351,10 +356,10 @@ var QUESTIONS = [
   n: 17, domain: "CCW", topic: "Topic 2", sc: "S6",
   stem: "Corvus documented in <code>CLAUDE.md</code>: \"NEVER read files in <code>infra/secrets/</code>.\" An audit finds 11 sessions in three months where Claude read those files. Platform engineering proposes making the instruction bolder and repeating it at the top and bottom of the file. What should you recommend instead?",
   opts: {
-    A: "Shorten <code>CLAUDE.md</code> so the instruction is more prominent, and switch to a stronger model.",
-    B: "Add a <code>PostToolUse</code> hook that logs an alert whenever a secrets file is read.",
-    C: "Move the rule to <code>permissions.deny</code> with <code>Read(./infra/secrets/**)</code>, deployed via managed settings so it cannot be overridden.",
-    D: "Repeat the instruction in each team's nested <code>CLAUDE.md</code> so it appears more often in context."
+    A: "Shorten <code>CLAUDE.md</code> so that the instruction becomes far more prominent, and switch to a stronger model.",
+    B: "Add a <code>PostToolUse</code> hook that logs a security alert whenever any of the secrets files has been read.",
+    C: "Move the rule to <code>permissions.deny</code> as <code>Read(./infra/secrets/**)</code> in managed settings, so it cannot be overridden.",
+    D: "Repeat the instruction in every team's nested <code>CLAUDE.md</code> file so that it appears far more often in the context."
   },
   correct: ["C"],
   rule: "CLAUDE.md is context delivered to the model, not enforced configuration. It shapes behaviour without guaranteeing it, at any font size or repetition count. Requirements whose violation is a security or compliance event belong in <code>permissions.deny</code>, and requirements that must survive a developer editing project settings belong in managed settings, which sit above project and local layers and cannot be excluded.",
@@ -369,10 +374,10 @@ var QUESTIONS = [
   n: 18, domain: "CCW", topic: "Topic 3", sc: "S6",
   stem: "Corvus wants to guarantee that an AWS access key can never be written into a source file by a Claude session. Which mechanism satisfies \"can never\"?",
   opts: {
-    A: "A <code>PostToolUse</code> hook on <code>Edit|Write</code> that scans the file and exits 2 if a key pattern is found.",
-    B: "A <code>Stop</code> hook that runs a secret scanner before the agent finishes its turn.",
-    C: "A CLAUDE.md rule instructing Claude never to write credentials.",
-    D: "A <code>PreToolUse</code> hook on <code>Edit|Write</code> that inspects <code>tool_input</code> and returns a deny decision when the content matches a key pattern."
+    A: "A <code>PostToolUse</code> hook on <code>Edit|Write</code> that scans the file and exits 2 on a key pattern.",
+    B: "A <code>Stop</code> hook that runs a full secret scanner over the repository before the agent finishes its turn.",
+    C: "A <code>CLAUDE.md</code> rule instructing Claude never to write credentials into tracked files.",
+    D: "A <code>PreToolUse</code> hook on <code>Edit|Write</code> that inspects <code>tool_input</code> and denies on a key pattern."
   },
   correct: ["D"],
   rule: "The discriminator is one word in the requirement: <em>never</em> means prevention, and only <code>PreToolUse</code> runs before the tool executes and can block it. <code>PostToolUse</code> and <code>Stop</code> are verification events — they run after the write has already happened.",
@@ -387,10 +392,10 @@ var QUESTIONS = [
   n: 19, domain: "CCW", topic: "Topic 3", sc: "S6",
   stem: "A Corvus <code>PostToolUse</code> hook runs the type-checker and, on failure, executes <code>echo \"type check failed\" >&2; exit 2</code>. Claude reliably notices the failure but its fix attempts are scattershot, often editing unrelated files. What single change most improves the loop?",
   opts: {
-    A: "Print the actual compiler diagnostics — file, line, error code and message — to stderr instead of the generic string.",
-    B: "Move the type-check to a <code>Stop</code> hook so it runs once per turn instead of once per edit.",
-    C: "Change the exit code from 2 to 1 so Claude is not blocked and can continue.",
-    D: "Add \"fix type errors carefully\" to <code>CLAUDE.md</code>."
+    A: "Print the real compiler diagnostics — file, line and message — to stderr instead of a generic string.",
+    B: "Move the type-check into a <code>Stop</code> hook so that it runs once per turn rather than once per edit.",
+    C: "Change the hook's exit code from 2 to 1 so that Claude is no longer blocked and is able to keep going.",
+    D: "Add a line to <code>CLAUDE.md</code> telling Claude to fix any type errors carefully before moving on."
   },
   correct: ["A"],
   rule: "On exit code 2, the hook's <strong>stderr becomes Claude's next input</strong>. That text is the model's entire view of the failure. A generic message forces the model to guess which file and which error, producing the scattershot behaviour described; real diagnostics produce a targeted fix.",
@@ -405,10 +410,10 @@ var QUESTIONS = [
   n: 20, domain: "CCW", topic: "Topic 3", sc: "S6",
   stem: "Corvus added a <code>PostToolUse</code> hook running the full 6-minute monorepo test suite after every <code>Edit</code>. Within two weeks, half the teams had added <code>\"disableAllHooks\": true</code> to their local settings. What is the correct fix?",
   opts: {
-    A: "Block teams from editing local settings by removing write access to the file.",
-    B: "Increase the hook timeout so the suite has enough time to finish.",
-    C: "Scope the hook to run only tests related to the edited file, and move the full suite to a <code>Stop</code> hook and to CI.",
-    D: "Accept the trade-off — correctness matters more than developer experience."
+    A: "Block teams from editing local settings at all, by removing write access to the settings file.",
+    B: "Increase the hook timeout so that the full test suite has enough time to finish.",
+    C: "Scope the hook to tests related to the edited file, moving the full suite to <code>Stop</code> and CI.",
+    D: "Accept the trade-off, on the grounds that correctness matters more than developer experience."
   },
   correct: ["C"],
   rule: "A quality gate only enforces anything while it is enabled. Expensive checks must be scoped to stay usable: related tests per edit, the full suite at end of turn or in CI. The layered answer — fast local hook for self-correction, branch-protected CI as the authority — is the pattern the exam rewards.",
@@ -423,10 +428,10 @@ var QUESTIONS = [
   n: 21, domain: "CCW", topic: "Topic 3", sc: "S6",
   stem: "Corvus wants a hook that fires on file edits and writes, and on the GitHub MCP server's issue-creation tool, but not on reads or shell commands. Which matcher configuration is correct?",
   opts: {
-    A: "A single hook entry with <code>\"matcher\": \"*\"</code> and filtering logic inside the script.",
-    B: "<code>\"matcher\": \"Edit|Write|create_issue\"</code>.",
-    C: "<code>\"matcher\": \"Edit, Write, github\"</code> as a comma-separated list.",
-    D: "Two entries: one with <code>\"matcher\": \"Edit|Write\"</code> and one with a regex matcher such as <code>\"mcp__github__create_issue\"</code>."
+    A: "A single hook entry with <code>\"matcher\": \"*\"</code> and the filtering logic inside the script.",
+    B: "One entry with <code>\"matcher\": \"Edit|Write|create_issue\"</code>, relying on the bare tool name to match.",
+    C: "One entry with <code>\"matcher\": \"Edit, Write, github\"</code> written as a comma-separated list of tools.",
+    D: "Two entries: <code>\"matcher\": \"Edit|Write\"</code> and a second matching <code>\"mcp__github__create_issue\"</code>."
   },
   correct: ["D"],
   rule: "Matchers containing only letters, digits, underscores, hyphens, spaces, commas and pipes are treated as exact names or alternation lists. Anything containing other characters is evaluated as an unanchored JavaScript regex. MCP tools are named <code>mcp__&lt;server&gt;__&lt;tool&gt;</code>, so they must be matched by their full namespaced name.",
@@ -441,10 +446,10 @@ var QUESTIONS = [
   n: 22, domain: "CCW", topic: "Topic 2", sc: "S6", type: "multi",
   stem: "Corvus has a 900-line root <code>CLAUDE.md</code> mixing security rules, formatting standards, per-language conventions and the release runbook. Adherence is poor and context is bloated. Which TWO restructuring moves give the largest improvement?",
   opts: {
-    A: "Move the per-language conventions into <code>.claude/rules/*.md</code> with <code>paths:</code> frontmatter so they load only when Claude touches matching files.",
-    B: "Move the security rules into <code>permissions.deny</code>/<code>ask</code> and the mechanically checkable quality rules into hooks.",
-    C: "Move the release runbook into a nested <code>CLAUDE.md</code> in the <code>release/</code> directory.",
-    D: "Split the file into several files referenced from <code>CLAUDE.md</code> with <code>@path</code> imports."
+    A: "Move per-language conventions into <code>.claude/rules/*.md</code> with <code>paths:</code> frontmatter so they load on demand.",
+    B: "Move the security rules into <code>permissions.deny</code>/<code>ask</code>, and the mechanically checkable rules into hooks.",
+    C: "Move the release runbook into a nested <code>CLAUDE.md</code> inside the repo's <code>release/</code> directory.",
+    D: "Split the file into several smaller files, each referenced from the root <code>CLAUDE.md</code> with <code>@path</code> imports."
   },
   correct: ["A","B"],
   rule: "Two independent problems are being solved: enforcement (rules that must hold belong in permissions and hooks, not context) and context cost (instructions that only matter sometimes should load only then). Path-scoped rules genuinely defer tokens; <code>@path</code> imports do not.",
@@ -459,10 +464,10 @@ var QUESTIONS = [
   n: 23, domain: "CCW", topic: "Topic 2", sc: "S6",
   stem: "A Corvus engineer adds <code>\"permissions\": {\"allow\": [\"Read(./infra/secrets/**)\"]}</code> to their <code>.claude/settings.local.json</code> because a debugging task needs it. Security has the same path in <code>deny</code> in the enterprise managed policy. What happens, and why?",
   opts: {
-    A: "Claude prompts the user to choose, since the rules conflict.",
-    B: "The read is denied, because managed policy sits above all user-editable layers and <code>deny</code> beats <code>allow</code>.",
-    C: "The behaviour is undefined and depends on file load order.",
-    D: "The local allow wins, because local settings have higher precedence than project settings."
+    A: "Claude prompts the user to choose between them, since the rules are in direct conflict.",
+    B: "The read is denied: managed policy outranks every user-editable layer, and <code>deny</code> beats <code>allow</code>.",
+    C: "The behaviour here is undefined and depends on the order in which the settings files are loaded.",
+    D: "The local allow wins, because local settings always take higher precedence than project settings."
   },
   correct: ["B"],
   rule: "Precedence runs managed policy → command-line arguments → local settings → project settings → user settings, and within permissions <code>deny</code> beats <code>ask</code> beats <code>allow</code>. Managed policy is the only layer an end user cannot override, which is why every \"guarantee this org-wide\" answer resolves there.",
@@ -477,10 +482,10 @@ var QUESTIONS = [
   n: 24, domain: "CCW", topic: "Topic 2", sc: "S6",
   stem: "Corvus adds a GitHub Actions job that runs <code>claude \"review the diff and report issues\"</code>. The job times out at 60 minutes with no output on every run. What is wrong?",
   opts: {
-    A: "The runner lacks the permissions needed to read the diff.",
-    B: "Without <code>-p</code> (<code>--print</code>), the CLI starts an interactive session that never receives input and never exits.",
-    C: "The prompt is too vague, so the model keeps exploring the repository.",
-    D: "The API key is not set, so the process is waiting on authentication."
+    A: "The GitHub Actions runner lacks the permissions it needs to read the pull request diff.",
+    B: "Without <code>-p</code> (<code>--print</code>), the CLI starts an interactive session that never exits in CI.",
+    C: "The prompt is too vague, so the model just keeps exploring the repository.",
+    D: "The API key is not set, so the process just sits there waiting on authentication input."
   },
   correct: ["B"],
   rule: "<code>-p</code>/<code>--print</code> is what makes Claude Code non-interactive: run the prompt, print the result, exit. Without it, a CI runner attaches to an interactive REPL with no TTY input and hangs until the job times out. This is the single most-tested CI fact in the exam.",
@@ -495,10 +500,10 @@ var QUESTIONS = [
   n: 25, domain: "CCW", topic: "Topic 2", sc: "S6",
   stem: "To save on startup cost, a Corvus engineer configures the CI review job to resume the same Claude Code session across all pull requests. Reviewers start reporting comments about code that is not in the diff under review. What is the cause and the fix?",
   opts: {
-    A: "Session reuse leaks the previous PR's context into the next review; each review must run in an isolated session.",
-    B: "The model is hallucinating; switch to a stronger model.",
-    C: "The diff command is picking up the wrong base branch.",
-    D: "Context compaction is dropping the current diff; disable auto-compaction."
+    A: "Session reuse leaks the last PR's context into the next review; each run needs isolation.",
+    B: "The model is simply hallucinating these findings; switching to a stronger model will fix it.",
+    C: "The diff command is picking up the wrong base branch when it builds up the comparison.",
+    D: "Context compaction is dropping the current diff, so automatic compaction needs to be off."
   },
   correct: ["A"],
   rule: "Session isolation is a correctness requirement for CI review, not an optimisation. A resumed session carries the prior conversation, so the model reasons about code from an unrelated change set — producing confident, specific, wrong comments. Fresh session per run.",
@@ -513,10 +518,10 @@ var QUESTIONS = [
   n: 26, domain: "CCW", topic: "Topic 2", sc: "S6",
   stem: "Corvus wants dependency changes reviewed by a human, but blocking them entirely stops legitimate work and pushes engineers to disable the config. Which permission configuration fits?",
   opts: {
-    A: "<code>\"deny\": [\"Edit(package.json)\"]</code>",
-    B: "<code>\"ask\": [\"Edit(package.json)\", \"Edit(pnpm-lock.yaml)\"]</code>",
-    C: "<code>\"allow\": [\"Edit(package.json)\"]</code> plus a CLAUDE.md note asking Claude to confirm first",
-    D: "A <code>PostToolUse</code> hook that reverts any change to <code>package.json</code>"
+    A: "A <code>\"deny\": [\"Edit(package.json)\"]</code> rule in the project settings.",
+    B: "<code>\"ask\": [\"Edit(package.json)\", \"Edit(pnpm-lock.yaml)\"]</code> in settings.",
+    C: "<code>\"allow\": [\"Edit(package.json)\"]</code> plus a CLAUDE.md note to confirm first.",
+    D: "A <code>PostToolUse</code> hook that reverts any change made to <code>package.json</code> afterwards."
   },
   correct: ["B"],
   rule: "<code>ask</code> is the middle ground candidates forget exists: the action is legitimate but consequential enough to warrant a human decision at the moment it happens. Over-choosing <code>deny</code> for consequential-but-valid actions is a recognised distractor pattern.",
@@ -531,9 +536,9 @@ var QUESTIONS = [
   n: 27, domain: "CCW", topic: "Topic 2", sc: "S6",
   stem: "Corvus wants React conventions applied only when Claude works with <code>.tsx</code> files, without adding them to every session's context. Which mechanism does this?",
   opts: {
-    A: "A nested <code>CLAUDE.md</code> in every directory containing <code>.tsx</code> files.",
-    B: "<code>@react-conventions.md</code> imported from the root <code>CLAUDE.md</code>.",
-    C: "<code>.claude/rules/react.md</code> with <code>paths: [\"**/*.tsx\"]</code> in its frontmatter.",
+    A: "A nested <code>CLAUDE.md</code> in every directory that contains <code>.tsx</code> files.",
+    B: "An <code>@react-conventions.md</code> import in the root <code>CLAUDE.md</code>.",
+    C: "<code>.claude/rules/react.md</code> with <code>paths: [\"**/*.tsx\"]</code> frontmatter.",
     D: "A <code>SessionStart</code> hook that injects the conventions as additional context."
   },
   correct: ["C"],
@@ -549,10 +554,10 @@ var QUESTIONS = [
   n: 28, domain: "CCW", topic: "Topic 2", sc: "S6",
   stem: "Corvus builds a code-review subagent. It should read and search the repository and run <code>git diff</code>, but must never modify files. Which configuration expresses this most reliably?",
   opts: {
-    A: "A <code>PostToolUse</code> hook that reverts any file the review subagent writes.",
-    B: "A <code>tools:</code> allowlist in the subagent frontmatter granting only <code>Read, Grep, Glob</code> and a scoped <code>Bash</code>.",
-    C: "A system prompt in the subagent's markdown body instructing it to review only and never edit.",
-    D: "<code>model: haiku</code>, since a smaller model is less likely to attempt edits."
+    A: "A <code>PostToolUse</code> hook that reverts any file that the review subagent writes during a review.",
+    B: "A <code>tools:</code> allowlist in the subagent's own frontmatter granting <code>Read, Grep, Glob</code> only.",
+    C: "A system prompt in the subagent's markdown body telling it to review only and never edit.",
+    D: "<code>model: haiku</code>, on the grounds that a smaller model is less likely to attempt edits."
   },
   correct: ["B"],
   rule: "Role-scoped tool assignment is the structural control. A subagent's <code>tools:</code> allowlist determines what it can invoke at all — the edit tools are simply not present. This simultaneously reduces selection ambiguity and eliminates the blast radius, which is why \"give every agent every tool\" is a named anti-pattern.",
@@ -567,10 +572,10 @@ var QUESTIONS = [
   n: 29, domain: "PESO", topic: "Topic 5", sc: "S5",
   stem: "Atlas finds that <code>policy_number</code> is fabricated on 27% of claim forms. Investigation shows those forms genuinely have no policy number — the claim predates policy issuance. The schema marks <code>policy_number</code> as <code>{\"type\": \"string\"}</code> and lists it in <code>required</code>. What is the root cause and correct fix?",
   opts: {
-    A: "The prompt does not emphasise accuracy strongly enough; add \"do not guess — accuracy is critical\" to the system prompt.",
-    B: "Add a validation-retry loop that re-extracts when the policy number looks implausible.",
-    C: "The schema makes absence inexpressible, so the model must invent a value to satisfy it; change the type to <code>[\"string\", \"null\"]</code> and document the null semantics in the field description.",
-    D: "Temperature is too high; set it to 0."
+    A: "The prompt does not emphasise accuracy strongly enough; add \"do not guess — accuracy is critical\" to it.",
+    B: "Add a validation-retry loop that re-extracts the document whenever the policy number returned looks implausible.",
+    C: "The schema makes absence inexpressible, so the model must invent a value; use <code>[\"string\", \"null\"]</code> instead.",
+    D: "Temperature is set too high for an extraction task of this kind; set it to 0 and re-run the whole batch."
   },
   correct: ["C"],
   rule: "A schema is a constraint the model must satisfy. If satisfying it requires inventing data, the model invents data — this is not carelessness, it is the grammar leaving no legal alternative. The root cause of fabrication on genuinely-absent fields is always the schema, never the prompt.",
@@ -585,10 +590,10 @@ var QUESTIONS = [
   n: 30, domain: "PESO", topic: "Topic 5", sc: "S5",
   stem: "Atlas is deciding between two schema styles for fields that are often absent: (i) omit the field from <code>required</code> so the model can leave the key out, or (ii) keep the key in <code>required</code> but make the value nullable. Which is preferable for a pipeline feeding claims adjudication, and why?",
   opts: {
-    A: "(i), because omitting keys produces smaller payloads and lower token cost.",
-    B: "(ii), because consumers always find the key and only test for <code>null</code>, and per-field null rates become directly measurable.",
-    C: "(i), because a missing key is a stronger signal of absence than an explicit null.",
-    D: "Either is equivalent; the choice is stylistic."
+    A: "(i), because omitting the absent keys produces smaller payloads and a lower token cost.",
+    B: "(ii), because consumers always find the key and only test <code>null</code>, so null rates stay measurable.",
+    C: "(i), because a missing key is a far stronger signal of absence than an explicit null value ever is.",
+    D: "Either one is equivalent in practice; the choice between them is purely a stylistic preference."
   },
   correct: ["B"],
   rule: "Required key with nullable value is the recommended pattern for extraction. It removes defensive key checks from every consumer, makes \"absent\" a first-class value you can count, and eliminates the ambiguity between \"the document lacked it\" and \"the extractor forgot it\".",
@@ -603,10 +608,10 @@ var QUESTIONS = [
   n: 31, domain: "PESO", topic: "Topic 5", sc: "S5",
   stem: "Atlas's <code>document_type</code> enum lists five values. Reviewers find that unusual documents are being classified into the nearest listed type, and separately that illegible scans are also being assigned a type. What is the correct schema change?",
   opts: {
-    A: "Add a single <code>\"other\"</code> member to cover everything the list does not.",
-    B: "Add a <code>confidence</code> number alongside <code>document_type</code> and threshold on it.",
-    C: "Add both <code>\"other\"</code> (a real type outside the list) and <code>\"unclear\"</code> (cannot be determined), because they diagnose different problems and drive different fixes.",
-    D: "Remove the enum and use a free-form string."
+    A: "Add a single <code>\"other\"</code> member to the enum, covering every kind of document that the list does not name.",
+    B: "Add a <code>confidence</code> score alongside <code>document_type</code>, and threshold the classifications on it.",
+    C: "Add both <code>\"other\"</code> (a real unlisted type) and <code>\"unclear\"</code> (illegible), which diagnose different problems.",
+    D: "Remove the enum entirely and let the field accept any free-form string value at all instead."
   },
   correct: ["C"],
   rule: "Every closed enum needs two escape hatches doing different jobs. <code>\"other\"</code> signals a taxonomy gap — a real category you did not list — and is fixed by extending the enum. <code>\"unclear\"</code> signals an evidence gap — the document does not support a determination — and is fixed by better input quality or human review. One combined bucket hides which fix applies.",
@@ -621,10 +626,10 @@ var QUESTIONS = [
   n: 32, domain: "PESO", topic: "Topic 5", sc: "S5",
   stem: "Atlas enables structured outputs with a strict JSON schema. Malformed JSON and missing keys disappear entirely. However, adjusters report that roughly the same number of claims have <em>wrong</em> amounts as before. Why?",
   opts: {
-    A: "The schema is not strict enough; add <code>additionalProperties: false</code> and it will resolve.",
-    B: "The model needs a larger context window to read the whole document accurately.",
-    C: "Structured outputs are incompatible with numeric fields and should not be used for amounts.",
-    D: "Schema enforcement constrains the shape of the output, not the truth of the values; semantic accuracy needs schema design, targeted examples and post-parse verification."
+    A: "The schema is not strict enough; adding <code>additionalProperties: false</code> to it will resolve the issue.",
+    B: "The model needs a larger context window so that it can read each whole document accurately end to end.",
+    C: "Structured outputs are fundamentally incompatible with numeric fields, so they should not be used for amounts.",
+    D: "Schema enforcement fixes the shape of the output, not the truth of the values; accuracy needs verification."
   },
   correct: ["D"],
   rule: "Structured outputs guarantee syntactic conformance: valid JSON, correct types, legal enum members, required keys present. They have no opinion about whether the number matches the page. Syntactic and semantic errors are different failure classes and need different fixes.",
@@ -639,10 +644,10 @@ var QUESTIONS = [
   n: 33, domain: "PESO", topic: "Topic 6", sc: "S5",
   stem: "Atlas receives dates as <code>14/03/2026</code>, <code>03-14-2026</code>, <code>14 Mar 2026</code> and <code>2026-03-14</code>. Extracted values are correct but inconsistently formatted, and DD/MM versus MM/DD is sometimes resolved wrongly. Where should the fix go?",
   opts: {
-    A: "Increase the number of few-shot examples until the model converges on one format.",
-    B: "In the field's <code>description</code>: state the target format, how to resolve DD/MM versus MM/DD using the broker's region, and what to return when it is genuinely ambiguous.",
-    C: "In the system prompt as a general instruction to use ISO dates.",
-    D: "A regex post-processing layer that normalises whatever the model returns."
+    A: "Increase the number of few-shot examples in the prompt until the model converges on a single format.",
+    B: "In the field's <code>description</code>: target format, DD/MM versus MM/DD resolution, and the ambiguous case.",
+    C: "In the system prompt, as a general instruction telling the model to always use ISO-format dates.",
+    D: "A regex post-processing layer downstream that normalises whatever format the model returns."
   },
   correct: ["B"],
   rule: "Format contracts belong in the field description, adjacent to the field they govern. A complete contract has three parts: the target format, the resolution rule for known ambiguities, and the fallback when resolution is impossible. Instructions that specify only the target leave the hardest case undefined — and undefined cases produce silent errors.",
@@ -657,10 +662,10 @@ var QUESTIONS = [
   n: 34, domain: "PESO", topic: "Topic 6", sc: "S5",
   stem: "Atlas measures field accuracy at 96% for its largest broker and 68% for a broker whose forms use a two-column layout with the totals block on page 3. Both use the same prompt and schema. What is the highest-value intervention?",
   opts: {
-    A: "Move that broker's documents entirely to human review.",
-    B: "Add few-shot examples drawn from the second broker's layout, and consider classifying first and routing to a layout-specific prompt.",
-    C: "Raise the retry count for that broker so failed extractions get another attempt.",
-    D: "Increase the context window so the whole document fits more comfortably."
+    A: "Move that particular broker's documents entirely into the human review queue instead.",
+    B: "Add few-shot examples from that broker's layout, and consider routing by layout after classifying.",
+    C: "Raise the retry count for that broker so that each failed extraction gets another attempt or two at it.",
+    D: "Increase the context window so that each whole document fits into it far more comfortably."
   },
   correct: ["B"],
   rule: "Errors clustering on one layout family mean that layout is under-represented in the prompt. Few-shot examples are the targeted fix, and when layouts are structurally disjoint, classify-then-route beats one universal mega-prompt. Spend few-shot capacity where the model is actually failing.",
@@ -675,9 +680,9 @@ var QUESTIONS = [
   n: 35, domain: "PESO", topic: "Topic 6", sc: "S5",
   stem: "Atlas processes two workloads: an overnight backfill of 2.1 million archived documents, and live extraction of documents attached to claims while an adjuster waits on screen. An architect proposes moving both to the Message Batches API for the 50% saving. Evaluate.",
   opts: {
-    A: "Correct for the overnight backfill only; the live path must stay on the standard API because batch processing can take up to 24 hours.",
-    B: "Correct for both — the saving is substantial and the batch window is usually short.",
-    C: "Correct for the live path only, since batching smooths out latency spikes.",
+    A: "Correct for the overnight backfill only; the live path must stay on the standard API.",
+    B: "Correct for both — the saving is substantial and the batch window is usually quite short.",
+    C: "Correct for the live path only, on the grounds that batching smooths out latency spikes.",
     D: "Incorrect for both — batch processing does not support structured outputs."
   },
   correct: ["A"],
@@ -693,10 +698,10 @@ var QUESTIONS = [
   n: 36, domain: "PESO", topic: "Topic 6", sc: "S5",
   stem: "Atlas adds a validation-retry loop: when extraction output fails validation, re-run with the error appended. It fixes many format violations but for one field the loop consistently exhausts its three retries and then emits a fabricated value. What does this indicate?",
   opts: {
-    A: "That field is genuinely absent from those documents, so no number of retries can recover it — the schema must permit null instead.",
-    B: "The validation rule is too strict and should be relaxed.",
-    C: "The model is not reading the error feedback; restate it more clearly.",
-    D: "The retry count is too low; raise it to ten."
+    A: "The field is genuinely absent from those documents, so no retry can recover it — permit null.",
+    B: "The validation rule is simply too strict here and should be relaxed for this one field.",
+    C: "The model is not reading the error feedback properly, so the feedback should be restated more clearly.",
+    D: "The retry count is set too low; raising it to ten will clear the remaining failures."
   },
   correct: ["A"],
   rule: "Retry loops fix recoverable failures — a bad format, a fumbled field the model could read correctly on a second focused attempt. They cannot fix missing data. A loop that always exhausts and then fabricates is diagnostic: the data is not on the page, and the schema is forcing an answer.",
@@ -711,10 +716,10 @@ var QUESTIONS = [
   n: 37, domain: "PESO", topic: "Topic 6", sc: "S5",
   stem: "Atlas reports pipeline accuracy of 94.2% and proposes auto-approving all extractions to clear the review backlog. The claims director refuses, saying the number is meaningless. What is the director's technical point?",
   opts: {
-    A: "The sample used to compute the figure was probably too small.",
-    B: "Aggregate accuracy hides per-field and per-layout variation; a field or broker family failing badly is invisible in the average, and automation thresholds should be set per field.",
-    C: "94.2% is simply too low for financial processing regardless of how it is measured.",
-    D: "Accuracy should be replaced by precision and recall."
+    A: "The sample used to compute that headline figure was in all likelihood far too small.",
+    B: "Aggregate accuracy hides per-field and per-layout variation; set thresholds per field.",
+    C: "94.2% is simply far too low for financial processing, regardless of how it is measured.",
+    D: "Accuracy should be replaced altogether by precision and recall for this kind of task."
   },
   correct: ["B"],
   rule: "Segment metrics by document type, vendor/layout and field. A pipeline at 99% on invoice numbers and 61% on tax IDs for one broker family averages to something respectable and fails a specific business process completely. Segmentation is also what lets you automate the reliable fields and route only the weak ones to review.",
@@ -729,10 +734,10 @@ var QUESTIONS = [
   n: 38, domain: "PESO", topic: "Topic 7", sc: "S5", type: "multi",
   stem: "Atlas wants a feedback loop from its human review queue that actually improves the pipeline. Which TWO elements are essential to the design?",
   opts: {
-    A: "A free-text note from the reviewer explaining what went wrong.",
-    B: "A dashboard showing total corrections per week.",
-    C: "A typed <code>error_class</code> on every correction, drawn from a taxonomy where each class maps to one intervention (schema, description, few-shot, or validation code).",
-    D: "Version identifiers for the prompt, schema and example set on every record, plus flagging corrected documents for a regression eval set."
+    A: "A free-text note from the reviewer on every correction record, explaining what it was that went wrong.",
+    B: "A dashboard showing the total number of corrections made each week, trended over time.",
+    C: "A typed <code>error_class</code> on every correction, from a taxonomy mapping each class to one fix.",
+    D: "Version identifiers for the prompt, schema and examples on every record, plus a regression eval set."
   },
   correct: ["C","D"],
   rule: "A feedback loop needs classification and attribution. Typed error classes convert individual corrections into a ranked backlog with a known fix for each class. Version identifiers let you tell your change from a model upgrade or a shift in document mix, and a regression eval set built from real corrections stops each fix from quietly breaking an earlier one.",
@@ -747,10 +752,10 @@ var QUESTIONS = [
   n: 39, domain: "PESO", topic: "Topic 7", sc: "S5",
   stem: "Atlas aggregates a month of corrections. The largest cluster is <code>error_class: MISSING_ENUM_MEMBER</code> on <code>treatment_category</code>, concentrated in documents from three medical providers who have started using a new billing taxonomy. What is the correct intervention?",
   opts: {
-    A: "Extend the enum with the new categories, and check whether the <code>\"other\"</code> rate was already rising as an early warning.",
-    B: "Add a validation rule rejecting the new categories.",
-    C: "Route all documents from those three providers to human review permanently.",
-    D: "Add few-shot examples from those three providers."
+    A: "Extend the enum with the new categories, checking whether the <code>\"other\"</code> rate had risen.",
+    B: "Add a validation rule that rejects any document that falls into one of the three new categories.",
+    C: "Route all documents from those three providers into the human review queue permanently.",
+    D: "Add few-shot examples drawn from the documents produced by those three providers."
   },
   correct: ["A"],
   rule: "Each error class maps to exactly one intervention. <code>MISSING_ENUM_MEMBER</code> is a taxonomy gap and is fixed by extending the enum — which is also why a well-designed enum has an <code>\"other\"</code> member: its rate is the leading indicator that a real category is missing.",
@@ -765,10 +770,10 @@ var QUESTIONS = [
   n: 40, domain: "PESO", topic: "Topic 5", sc: "S5",
   stem: "Atlas needs to guarantee that <code>claimed_amount</code> is never negative and that the sum of line items equals the stated total. An engineer proposes expressing both in the JSON schema. What is the correct assessment?",
   opts: {
-    A: "Both should be expressed as instructions in the field descriptions instead.",
-    B: "Both can be expressed: use <code>minimum: 0</code> and a computed constraint.",
-    C: "Neither can be expressed — numeric bounds and cross-field arithmetic are outside the supported schema features; both belong in a post-parse validation layer.",
-    D: "Only the cross-field rule can be expressed, via <code>allOf</code>."
+    A: "Both should instead be expressed as plain instructions written into each of the field descriptions.",
+    B: "Both can be expressed: use <code>minimum: 0</code> together with a computed cross-field constraint.",
+    C: "Neither — numeric bounds and cross-field arithmetic belong in a post-parse validation layer.",
+    D: "Only the cross-field rule can be expressed, and that is done by using <code>allOf</code> blocks."
   },
   correct: ["C"],
   rule: "Structured outputs support types, <code>enum</code>, <code>const</code>, <code>required</code>, <code>additionalProperties: false</code>, <code>anyOf</code>, <code>$ref</code>/<code>$defs</code> and standard string formats. They do <em>not</em> support numeric bounds (<code>minimum</code>/<code>maximum</code>), string length bounds, or cross-field arithmetic. Schemas constrain shape; business invariants are code.",
@@ -783,10 +788,10 @@ var QUESTIONS = [
   n: 41, domain: "TDM", topic: "Topic 8", sc: "S4",
   stem: "Vantage's agent calls <code>search_knowledge_base</code> when a user asks \"is my account locked?\", and calls <code>check_account_status</code> with an email address when it should pass an employee ID. Both tools have one-line descriptions. What is the highest-value first fix?",
   opts: {
-    A: "Switch to a larger model with better tool-selection performance.",
-    B: "Rewrite both descriptions with explicit positive scope, negative scope naming the other tool, exact input format specifications, and example inputs.",
-    C: "Add a routing instruction to the system prompt explaining when to use each tool.",
-    D: "Set <code>tool_choice: {\"type\":\"any\"}</code> so the model always commits to a tool."
+    A: "Switch to a larger model that has demonstrably better tool-selection performance in benchmarks.",
+    B: "Rewrite both descriptions with explicit positive and negative scope, formats and examples.",
+    C: "Add a routing instruction to the system prompt setting out when each of the tools should be used.",
+    D: "Set <code>tool_choice: {\"type\":\"any\"}</code> so that the model always commits to some tool or other."
   },
   correct: ["B"],
   rule: "The model selects a tool using only its name, description and input schema. It cannot see your API docs, your implementation or your intent. Tool selection errors are therefore description errors first, and Anthropic calls the description \"by far the most important factor in tool performance\" — aim for 3-4 sentences minimum.",
@@ -801,10 +806,10 @@ var QUESTIONS = [
   n: 42, domain: "TDM", topic: "Topic 9", sc: "S4",
   stem: "An engineer argues that setting <code>tool_choice: {\"type\":\"any\"}</code> will solve Vantage's tool mis-selection problem because \"it forces the model to be decisive\". Evaluate.",
   opts: {
-    A: "Incorrect — <code>any</code> guarantees that some tool is called but says nothing about which one; mis-selection is a tool-design problem.",
-    B: "Correct, provided <code>strict: true</code> is also set on every tool.",
-    C: "Correct — forcing a tool call eliminates hesitation and improves selection accuracy.",
-    D: "Incorrect, because <code>any</code> is not supported when more than three tools are provided."
+    A: "Incorrect — <code>any</code> forces a tool call, not the right one; mis-selection is a design flaw.",
+    B: "Correct, provided that <code>strict: true</code> has also been set on every one of the tools.",
+    C: "Correct — forcing a tool call removes hesitation and improves the model's selection accuracy.",
+    D: "Incorrect, because <code>any</code> is not supported once more than three tools are provided."
   },
   correct: ["A"],
   rule: "<code>tool_choice</code> governs invocation, not identity. <code>auto</code> lets the model decide whether to call anything; <code>any</code> requires a call but leaves the choice open; <code>tool</code> pins a specific tool. None of them improves discrimination between semantically similar tools — that is descriptions, consolidation and role scoping.",
@@ -819,10 +824,10 @@ var QUESTIONS = [
   n: 43, domain: "TDM", topic: "Topic 9", sc: "S1",
   stem: "Meridian needs every inbound message classified into one of nine intent categories, always as structured data, before routing. Currently the model sometimes replies conversationally instead. Which configuration guarantees the structured result?",
   opts: {
-    A: "<code>tool_choice: {\"type\":\"any\"}</code> with the classification tool as the only tool provided.",
-    B: "Post-processing that parses the intent out of the natural-language reply.",
-    C: "<code>tool_choice: {\"type\":\"auto\"}</code> plus a system prompt instruction to always classify first.",
-    D: "<code>tool_choice: {\"type\":\"tool\", \"name\":\"classify_intent\"}</code> with the nine categories as an enum in the schema and <code>strict: true</code>."
+    A: "<code>tool_choice: {\"type\":\"any\"}</code> with the classification tool as the only tool provided to it.",
+    B: "Post-processing code that parses the intent back out of the model's natural-language reply.",
+    C: "<code>tool_choice: {\"type\":\"auto\"}</code> plus a system prompt instruction always to classify first of all.",
+    D: "<code>tool_choice: {\"type\":\"tool\", \"name\":\"classify_intent\"}</code>, categories as an enum, <code>strict: true</code>."
   },
   correct: ["D"],
   rule: "When a specific tool must run, <code>tool_choice: {\"type\":\"tool\",\"name\":\"...\"}</code> guarantees the invocation and <code>strict: true</code> guarantees the inputs conform to the schema. An <code>enum</code> of valid categories closes the last gap. Together they turn a probabilistic behaviour into an API-level guarantee.",
@@ -837,10 +842,10 @@ var QUESTIONS = [
   n: 44, domain: "TDM", topic: "Topic 9", sc: "S2",
   stem: "Northwind's returns agent occasionally calls <code>process_return(order_id)</code> with an order ID that does not exist, having not called <code>lookup_order</code> first. Four fixes are proposed. Which provides the strongest guarantee?",
   opts: {
-    A: "Add to <code>process_return</code>'s description: \"Requires an order_id obtained from lookup_order. Do not call this tool until you have one.\"",
-    B: "Validate the precondition in the <code>process_return</code> backend and return a structured <code>PRECONDITION_FAILED</code> error naming <code>lookup_order</code> as the remediation.",
-    C: "Add a system prompt rule that returns must always begin with an order lookup.",
-    D: "Make <code>lookup_order</code> return a stable <code>order_id</code> the model can chain into the next call."
+    A: "Add to <code>process_return</code>'s description: \"Requires an order_id from lookup_order. Do not call until you have one.\"",
+    B: "Validate the precondition in the backend and return a <code>PRECONDITION_FAILED</code> error naming <code>lookup_order</code>.",
+    C: "Add a rule to the system prompt stating that every return must always begin with an order lookup first.",
+    D: "Make <code>lookup_order</code> return a stable <code>order_id</code> that the model is able to chain into the next call."
   },
   correct: ["B"],
   rule: "Structural over probabilistic, applied to sequencing. Descriptions and chainable identifiers make the right sequence likely; backend validation makes the wrong sequence impossible to complete. When a question asks which option <em>guarantees</em> something, the answer is the one enforced outside the model.",
@@ -855,10 +860,10 @@ var QUESTIONS = [
   n: 45, domain: "TDM", topic: "Topic 8", sc: "S4",
   stem: "Vantage's ticketing MCP tool returns <code>{\"error\": \"Operation failed\"}</code> when a ticket cannot be created. Observed agent behaviour: it retries non-retryable failures repeatedly, and in some sessions tells the user a ticket was created when it was not. Which error design best fixes both symptoms?",
   opts: {
-    A: "A structured error with <code>errorCategory</code>, <code>isRetryable</code>, the attempted input, a specific message, and a remediation hint.",
-    B: "Suppressing errors and returning an empty result so the agent moves on.",
-    C: "Returning HTTP status codes and letting the model infer meaning from them.",
-    D: "A longer natural-language error message explaining the failure in detail."
+    A: "A structured error with <code>errorCategory</code>, <code>isRetryable</code>, a message and a remediation hint.",
+    B: "Suppressing the errors and returning an empty result so that the agent simply moves on regardless.",
+    C: "Returning raw HTTP status codes and letting the model infer whatever meaning it can from them.",
+    D: "A longer natural-language error message that explains the failure in far more detail."
   },
   correct: ["A"],
   rule: "An error message is a prompt — it is the model's only information about how to recover. Structured fields let the model branch correctly: <code>isRetryable: false</code> stops retry storms, an explicit category selects the right recovery, and the remediation names the next action. A bare \"failed\" implies nothing, so the model guesses.",
@@ -873,10 +878,10 @@ var QUESTIONS = [
   n: 46, domain: "TDM", topic: "Topic 8", sc: "S2",
   stem: "Northwind's returns subagent has 31 tools available, including <code>create_return</code>, <code>start_return</code>, <code>initiate_rma</code> and <code>open_return_case</code>, which do overlapping things in different legacy systems. Selection accuracy is poor. What is the strongest structural fix?",
   opts: {
-    A: "Rename the tools alphabetically so the model considers them in a predictable order.",
-    B: "Consolidate the overlapping operations behind one tool with a <code>system</code> or <code>action</code> enum parameter, and scope the subagent's tool set to what the returns role actually needs.",
-    C: "Add a decision tree to the system prompt describing when to use each of the four tools.",
-    D: "Provide all 31 tools to every subagent so any agent can handle any request."
+    A: "Rename the tools alphabetically so that the model will consider them in a predictable order.",
+    B: "Consolidate overlapping operations behind one tool with an <code>action</code> enum, and scope the tool set.",
+    C: "Add a detailed decision tree to the system prompt setting out exactly when to use each of the four tools.",
+    D: "Provide all 31 of the tools to every subagent so that any agent can handle any request."
   },
   correct: ["B"],
   rule: "Fewer, more capable tools reduce selection ambiguity. Consolidating related operations behind an <code>action</code>/<code>system</code> parameter and scoping the visible catalogue per agent role are the two structural levers; namespacing names by service is the third. More tools monotonically increases mis-selection and context cost.",
@@ -891,9 +896,9 @@ var QUESTIONS = [
   n: 47, domain: "TDM", topic: "Topic 9", sc: "S1",
   stem: "Meridian's dispute flow ends with a summary turn: after all lookups are complete, the agent must produce a plain-language explanation for the customer and must not take any further action. What is the correct configuration for that final turn?",
   opts: {
-    A: "<code>tool_choice: {\"type\":\"none\"}</code>.",
+    A: "<code>tool_choice: {\"type\":\"none\"}</code> on the final summarisation call.",
     B: "<code>tool_choice: {\"type\":\"auto\"}</code> with a prompt instruction not to use tools.",
-    C: "Remove the tools from the request entirely and set <code>tool_choice: {\"type\":\"any\"}</code>.",
+    C: "Remove the tools from the request and set <code>tool_choice: {\"type\":\"any\"}</code>.",
     D: "Omit <code>tool_choice</code> and rely on the model to stop calling tools."
   },
   correct: ["A"],
@@ -909,9 +914,9 @@ var QUESTIONS = [
   n: 48, domain: "TDM", topic: "MCP", sc: "S6",
   stem: "Corvus wants every engineer to get the same GitHub and internal-metrics MCP servers automatically, without committing any credentials. Which configuration is correct?",
   opts: {
-    A: "Have each engineer add the servers to their personal <code>~/.claude.json</code> with their own tokens pasted in.",
-    B: "Commit <code>.mcp.json</code> to the repository with the server definitions, referencing credentials as <code>${GITHUB_TOKEN}</code> environment-variable substitutions.",
-    C: "Configure the servers through <code>CLAUDE.md</code> so they load with the project instructions.",
+    A: "Have each engineer add the servers to their own personal <code>~/.claude.json</code> with their tokens pasted in.",
+    B: "Commit <code>.mcp.json</code> with the server definitions, referencing credentials as <code>${GITHUB_TOKEN}</code>.",
+    C: "Configure the servers through <code>CLAUDE.md</code> so that they load along with the project instructions.",
     D: "Commit <code>.mcp.json</code> with the tokens included, and rely on the repository being private."
   },
   correct: ["B"],
@@ -927,10 +932,10 @@ var QUESTIONS = [
   n: 49, domain: "TDM", topic: "Topic 9", sc: "S4",
   stem: "A Vantage session needs the employee record, the asset assigned to that employee, and the client tenant's software-install policy. The asset lookup requires the employee ID returned by the employee lookup; the policy lookup requires only the tenant ID, which is already known. How should these be sequenced?",
   opts: {
-    A: "All three strictly sequentially, with <code>disable_parallel_tool_use: true</code>.",
-    B: "All three in parallel in a single turn, for minimum latency.",
-    C: "Employee lookup and policy lookup in parallel, then the asset lookup once the employee ID is available.",
-    D: "Asset lookup first, since it is the one with a dependency."
+    A: "All three strictly in sequence, with <code>disable_parallel_tool_use: true</code> on the request.",
+    B: "All three of them in parallel within a single turn, for the minimum possible latency overall.",
+    C: "Employee lookup and policy lookup in parallel, then asset lookup once the ID is known.",
+    D: "Asset lookup first, on the grounds that it is the one call with a dependency."
   },
   correct: ["C"],
   rule: "Parallelise independent calls, sequence dependent ones. Parallelism is a latency win where there is no data dependency and a correctness bug where there is. Map the dependency graph, then batch each independent layer into one turn.",
@@ -945,10 +950,10 @@ var QUESTIONS = [
   n: 50, domain: "TDM", topic: "Topic 9", sc: "S1",
   stem: "Meridian sets <code>tool_choice: {\"type\":\"tool\", \"name\":\"verify_identity\"}</code> for the first turn of every session. QA files a bug: \"the agent no longer greets the customer or explains what it is doing before verifying identity, despite the prompt telling it to.\" What is the correct response?",
   opts: {
-    A: "A prompt bug — strengthen the greeting instruction.",
-    B: "A regression in the API; file a support ticket.",
-    C: "Expected behaviour: forced tool use prefills the assistant turn, so no natural-language text is emitted before the <code>tool_use</code> block. Use <code>auto</code> and request the tool in the user message, or emit the greeting from a separate turn.",
-    D: "Set <code>disable_parallel_tool_use: false</code> to allow text alongside the tool call."
+    A: "A prompt bug — the greeting instruction in the system prompt simply needs strengthening.",
+    B: "A regression in the API itself; the right response here is to file a support ticket.",
+    C: "Expected — forced tool use prefills the assistant turn; use <code>auto</code>, or greet from a separate turn.",
+    D: "Set <code>disable_parallel_tool_use: false</code> so that plain text is permitted alongside the tool call itself."
   },
   correct: ["C"],
   rule: "With <code>tool_choice</code> set to <code>any</code> or <code>tool</code>, the API prefills the assistant message to force a tool call. The model therefore emits no preamble text before the <code>tool_use</code> block, even when explicitly instructed to. If you need commentary, use <code>auto</code> and ask for the tool in the user message.",
@@ -963,10 +968,10 @@ var QUESTIONS = [
   n: 51, domain: "TDM", topic: "Topic 8", sc: "S2", type: "multi",
   stem: "Northwind's <code>search_orders</code> tool returns every matching order in full, sometimes 400 records with all line items. Sessions that call it degrade badly afterwards: the agent loses the thread and mis-selects subsequent tools. Which TWO changes address this?",
   opts: {
-    A: "Paginate the response with metadata (<code>total</code>, <code>has_more</code>, <code>next_cursor</code>) and return a bounded page.",
-    B: "Add a <code>PostToolUse</code> hook to truncate the tool output to the first 2,000 characters.",
-    C: "Return only high-signal fields plus stable identifiers the agent can chain into <code>get_order_details</code>.",
-    D: "Increase the context window so the full result set fits comfortably."
+    A: "Paginate the response with metadata (<code>total</code>, <code>has_more</code>, <code>next_cursor</code>) and return a page.",
+    B: "Add a <code>PostToolUse</code> hook that truncates every tool output down to the first 2,000 characters.",
+    C: "Return only high-signal fields plus stable identifiers to chain into <code>get_order_details</code>.",
+    D: "Increase the context window so that the full result set fits inside it comfortably."
   },
   correct: ["A","C"],
   rule: "Tool responses should return only high-signal information: bounded pages, stable semantic identifiers, and the fields needed to reason about the next step. Bloated responses waste context and bury the next action. This is a tool-design defect, not a context-window limitation.",
@@ -981,10 +986,10 @@ var QUESTIONS = [
   n: 52, domain: "CMR", topic: "Topic 4", sc: "S1",
   stem: "A Meridian customer types \"stop, I want to speak to a real person\". The agent has already verified identity, confirmed the duplicate charge, and is one tool call from issuing a $22 refund that is within its authority. What should it do?",
   opts: {
-    A: "Escalate only if the customer repeats the request after being offered a resolution.",
+    A: "Escalate only if the customer repeats the request after having been offered a resolution first.",
     B: "Complete the refund first, since it takes one call and fully resolves the issue, then confirm to the customer.",
-    C: "Escalate immediately, attaching the verified facts and the prepared refund so the human can complete it in seconds.",
-    D: "Ask the customer whether they would prefer the agent to finish, since it is nearly done."
+    C: "Escalate immediately, attaching the verified facts and the prepared refund for the human to complete.",
+    D: "Ask the customer whether they would rather the agent finished it off, given it is nearly done."
   },
   correct: ["C"],
   rule: "An explicit request for a human is honoured immediately and unconditionally — not after one more tool call, not after an offer to help first, not conditional on the agent judging the request unnecessary. The correct implementation escalates <em>and</em> attaches everything gathered, so the transfer is both fast and warm.",
@@ -999,10 +1004,10 @@ var QUESTIONS = [
   n: 53, domain: "CMR", topic: "Topic 4", sc: "S1",
   stem: "Meridian's current escalation rule is: escalate when the model's self-reported confidence in its answer falls below 0.7. Risk engineering wants it replaced. Which criticism is the strongest technical objection?",
   opts: {
-    A: "Self-reported confidence is an uncalibrated token prediction, systematically overconfident on out-of-distribution requests, unauditable, and it drifts silently with prompt and model changes.",
-    B: "Confidence scores cannot be logged for compliance purposes.",
-    C: "Computing confidence adds latency to every session.",
-    D: "0.7 is the wrong threshold; it should be tuned per intent category."
+    A: "Self-reported confidence is uncalibrated, overconfident out of distribution, unauditable, and drifts.",
+    B: "Confidence scores cannot be logged in any form that satisfies the compliance team's requirements.",
+    C: "Computing a confidence score adds measurable extra latency to every one of the sessions the agent handles.",
+    D: "0.7 is simply the wrong threshold; it ought to be tuned per intent category instead of globally."
   },
   correct: ["A"],
   rule: "Model self-reported confidence is not a calibrated probability. It is highest precisely where you need it lowest — on unfamiliar requests — and because it is produced by the model, any prompt edit or model upgrade can move your escalation rate with no code change and no alert. Replace it with deterministic triggers evaluated from observable state.",
@@ -1017,10 +1022,10 @@ var QUESTIONS = [
   n: 54, domain: "CMR", topic: "Topic 4", sc: "S3",
   stem: "Helix's incident agent has, over six turns, called the same three diagnostic tools twice each with identical arguments and identical results, and the incident state is unchanged. How should this be detected and handled?",
   opts: {
-    A: "Increase the turn budget so the agent has more opportunity to find a new angle.",
-    B: "Detect it deterministically by comparing tool-call signatures and observed state across turns, then escalate with the diagnostics already gathered attached.",
-    C: "Ask the model each turn whether it feels it is making progress, and escalate when it says no.",
-    D: "Restart the session with a fresh context so the agent tries a different approach."
+    A: "Increase the turn budget so that the agent has more opportunity to find a fresh angle on it.",
+    B: "Detect it deterministically by comparing tool-call signatures across turns, then escalate.",
+    C: "Ask the model on each turn whether it feels it is making progress, and escalate when it says no.",
+    D: "Restart the session with a fresh context so that the agent tries a different approach."
   },
   correct: ["B"],
   rule: "\"No measurable progress\" is a deterministic escalation trigger, and the emphasis is on <em>measurable</em>. Repeating identical tool calls with identical results and unchanged state is observable from the orchestrator without asking the model anything. The escalation carries the diagnostics so the on-call engineer does not repeat them.",
@@ -1035,10 +1040,10 @@ var QUESTIONS = [
   n: 55, domain: "CMR", topic: "Topic 4", sc: "S1",
   stem: "Meridian's $50 auto-approval limit is currently stated in the agent's system prompt. A red-team exercise shows a crafted customer message can persuade the agent to issue a $300 refund. Where must the limit live?",
   opts: {
-    A: "In the <code>issue_refund</code> tool's backend, which checks the amount against the agent's tier and returns a structured <code>PERMISSION_DENIED</code> naming the approval required.",
-    B: "In a <code>PostToolUse</code> check that reverses refunds above the limit.",
-    C: "In the system prompt, restated more firmly and repeated at the end of the prompt.",
-    D: "In the tool's <code>input_schema</code> as a <code>maximum: 50</code> constraint on the amount."
+    A: "In the <code>issue_refund</code> backend, which checks the tier and returns <code>PERMISSION_DENIED</code>.",
+    B: "In a <code>PostToolUse</code> check that reverses any refund that gets issued above the limit.",
+    C: "In the system prompt, restated far more firmly and then repeated again at the very end of it.",
+    D: "In the tool's <code>input_schema</code>, as a <code>maximum: 50</code> constraint on the amount field itself."
   },
   correct: ["A"],
   rule: "Authority envelopes are enforced in backend tool logic, never in the prompt. Anything the model can be talked out of is not a control. A structured refusal also keeps the session productive: the agent escalates with the refund pre-assembled rather than dead-ending.",
@@ -1053,10 +1058,10 @@ var QUESTIONS = [
   n: 56, domain: "CMR", topic: "Topic 1 · 4", sc: "S2", type: "multi",
   stem: "Northwind is designing the escalation payload handed to human agents. The goal is to minimise human handling time. Which TWO elements belong in it?",
   opts: {
-    A: "The agent's self-assessed confidence in its interpretation of the request.",
-    B: "Verified facts with the tool that produced each one, plus the actions already attempted and their outcomes.",
-    C: "A machine-readable escalation reason code and a concrete suggested next step.",
-    D: "The complete raw conversation transcript including the agent's reasoning, so the human has full context."
+    A: "The agent's own self-assessed confidence in its reading of the customer's request.",
+    B: "Verified facts with the tool that produced each, plus actions attempted and their outcomes.",
+    C: "A machine-readable escalation reason code, together with one concrete suggested next step.",
+    D: "The complete raw conversation transcript, including the agent's reasoning, for full context."
   },
   correct: ["B","C"],
   rule: "A good handoff is decision-ready: facts with provenance, what was tried, why it stopped, and what to do next. Carry facts forward and drop the narrative. The metric that matters is human handling time after escalation, not escalation rate.",
@@ -1071,10 +1076,10 @@ var QUESTIONS = [
   n: 57, domain: "CMR", topic: "Context", sc: "S3",
   stem: "A Helix SEV-1 session has run four hours. Engineers notice the agent has started contradicting facts established early on — misstating which service was rolled back and when the error rate spiked. What is the most robust mitigation?",
   opts: {
-    A: "Increase the context window so the entire four-hour history stays in context.",
-    B: "Disable compaction so no information is ever summarised away.",
-    C: "Extract established incident facts into a structured state block maintained outside the conversation history, and re-inject it near the start of each request.",
-    D: "Ask the agent to re-read the conversation and correct itself each turn."
+    A: "Increase the context window so that the entire four-hour incident history stays in context throughout.",
+    B: "Disable compaction entirely, so that no information whatever is ever summarised away.",
+    C: "Extract established facts into a state block kept outside the history and re-injected each turn.",
+    D: "Ask the agent to re-read the whole conversation and correct itself again on each turn."
   },
   correct: ["C"],
   rule: "Long-session fact drift is fixed by moving durable facts out of the narrative and into structured state that you control, then placing it where attention is strongest. Progressive summarisation compresses the story; structured extraction preserves the facts. Bigger windows do not fix attention dilution.",
@@ -1089,10 +1094,10 @@ var QUESTIONS = [
   n: 58, domain: "CMR", topic: "Topic 4", sc: "S1",
   stem: "After a routine prompt revision, Meridian's escalation rate moved from 12% to 34% overnight with no change in traffic mix or in any business rule. What does this reveal about the design?",
   opts: {
-    A: "The escalation tool description needs clarifying.",
-    B: "The model version changed at the same time and should be pinned.",
-    C: "The new prompt is more cautious, which is a safety improvement worth keeping.",
-    D: "Escalation is being decided by the model rather than by deterministic orchestration logic; hard triggers should be evaluated from observable state in the orchestrator."
+    A: "The escalation tool's description simply needs clarifying and expanding a good deal.",
+    B: "The model version changed at the same time, and it should therefore have been pinned.",
+    C: "The new prompt is simply more cautious, and that is a safety improvement that is worth keeping.",
+    D: "Escalation is decided by the model, not by deterministic logic; hard triggers belong in code."
   },
   correct: ["D"],
   rule: "A prompt edit should not be able to move an escalation rate threefold. If it can, escalation is a probabilistic model behaviour rather than a policy decision. Move the hard triggers — explicit request, authority exceeded, policy gap, tool failure, no progress — into orchestration code, and the rate becomes a function of business conditions with prompt changes affecting only conversation quality.",
@@ -1107,10 +1112,10 @@ var QUESTIONS = [
   n: 59, domain: "CMR", topic: "Context", sc: "S4",
   stem: "Vantage summarises long service-desk sessions before handing them to a second agent for follow-up. Follow-up agents frequently miss constraints that were stated mid-conversation, such as \"this laptop cannot be reimaged before Friday\". Which change most improves this?",
   opts: {
-    A: "Make the summary longer so fewer details are lost.",
-    B: "Pass the full conversation instead of a summary.",
-    C: "Extract constraints and commitments into an explicit structured block placed at the start of the handoff, separate from the narrative summary.",
-    D: "Have the follow-up agent ask the user to restate any constraints."
+    A: "Make the handoff summary longer so that far fewer details are lost along the way.",
+    B: "Pass the entire conversation through to the next agent instead of a summary of it.",
+    C: "Extract constraints and commitments into a structured block at the start of the handoff.",
+    D: "Have the follow-up agent simply ask the user to restate any of their constraints at the start."
   },
   correct: ["C"],
   rule: "Summaries compress narrative and lose specifics. Constraints, commitments and decisions are exactly the content that must not be compressed, so extract them into structured fields and place them where attention is strongest — at the start of the input, not buried mid-document.",
@@ -1125,10 +1130,10 @@ var QUESTIONS = [
   n: 60, domain: "CMR", topic: "Topic 4", sc: "S1",
   stem: "A product manager proposes: \"run sentiment analysis on every message; when frustration is detected, escalate automatically.\" What is the correct architectural position?",
   opts: {
-    A: "Reject it entirely; sentiment has no place in a support system.",
+    A: "Reject it entirely, on the grounds that sentiment has no place in a support system.",
     B: "Adopt it as the primary escalation gate — frustrated customers are the ones who most need a human.",
-    C: "Adopt it, but only when the sentiment classifier's confidence exceeds 0.9.",
-    D: "Use it as supplementary context and routing metadata for the human, never as the escalation gate, which must be driven by deterministic triggers."
+    C: "Adopt it, but only in those cases where the sentiment classifier's confidence exceeds 0.9.",
+    D: "Use it as supplementary routing metadata for the human, never as the escalation gate itself."
   },
   correct: ["D"],
   rule: "Sentiment is an unreliable gate: it misfires on terse writers, non-native speakers and calmly-worded serious complaints, and it can be gamed. It is genuinely useful as prioritisation and as context for the human who takes over. Gates must be deterministic and observable; metadata can be probabilistic.",
